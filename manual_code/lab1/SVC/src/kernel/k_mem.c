@@ -48,14 +48,46 @@ U32 g_k_stacks[MAX_TASKS][KERN_STACK_SIZE >> 2] __attribute__((aligned(8)));
  *===========================================================================
  *                            FUNCTIONS
  *===========================================================================
+ 
+
  */
 
+// blocks of memory which are unallocated
+typedef struct free_node {
+    unsigned int size; // contains the 8 Bytes of overhead
+    struct __free_node *next 
+} free_node;
+
+// blocks of memory which are allocated
+typedef struct header {
+    unsigned int size; // contains the 8 Bytes of overhead
+    unsigned int padding; // needed to make size_of( struct header ) == size_of( struct free_node )
+} header;
+
+free_node * head;
+unsigned int *managed_memory_start; // beginning of managed memory
+unsigned int last_valid_address = 0xBFFFFFFF; // end of managed memory
+
 int k_mem_init(void) {
-    unsigned int end_addr = (unsigned int) &Image$$ZI_DATA$$ZI$$Limit;
-#ifdef DEBUG_0
-    printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
-    printf("k_mem_init: RAM ends at 0x%x\r\n", RAM_END);
-#endif /* DEBUG_0 */
+
+	unsigned int end_addr = (unsigned int) &Image$$ZI_DATA$$ZI$$Limit;
+    managed_memory_start = (unsigned int*) end_addr;
+    
+    // there is no memory available return -1
+    if ( end_addr >= last_valid_address ) {
+    	return RTX_ERR;
+    }
+
+    head = managed_memory_start;
+    head->size = last_valid_address - end_addr;
+    head->next = NULL;
+
+    #ifdef DEBUG_0
+		printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
+		printf("k_mem_init: RAM ends at 0x%x\r\n", RAM_END);
+	#endif /* DEBUG_0 */
+
+    // head node was created and setup
     return RTX_OK;
 }
 
