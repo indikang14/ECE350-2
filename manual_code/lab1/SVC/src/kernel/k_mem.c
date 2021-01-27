@@ -171,7 +171,68 @@ void* k_mem_alloc(size_t size) {
 }
 
 int k_mem_dealloc(void *ptr) {
+
+	/*
+	 * replace header with free node
+	 */
+	free_node *new; //replacing header
+	header *current; //current header of ptr
+	unsigned int addr = (unsigned int) ptr;
+	addr -= (unsigned int) sizeof(header); //ptr arithmetic to get start of header
+	printf ("starting address of free block is 0x%x\r\n", addr);
+	current =  (header *)addr; //point to start of header
+	new->size = current->size; //replace header size with free size
+	new = (free_node *) addr; //replace header with
+	printf ("confirm starting address of free block is 0x%x\r\n", new);
+	/**
+	 * check for coalescing and merge blocks
+	 ***/
+
+	/**
+	 * address ordered policy
+	 */
+
+	free_node* traverse = head;
+	if(head -> next == NULL ) { //no fragments yet
+		if(new == head - new->size) { // if freed memory is adjacent to head merge them
+			printf("in here because memory block adjacent to head;");
+			head = new;
+			head -> size += new->size ;
+		}
+		else if(head > new) { // if not adjacent just free the block
+			printf("in here because memory block freed at an earlier address than head");
+			head = new;
+			new->next = traverse;
+		}
+
+		return new->size;
+
+	}
+	while(traverse->next != NULL) { // traverse the list
+		printf("traversing the list and coalescing");
+
+		if(new==traverse + traverse->size  ) { // if adjacent memory to the
+			traverse -> size += new->size;
+			return new->size;
+		}
+		else if(new == traverse - traverse->size) {
+			traverse = new ;
+			traverse ->size += new->size;
+			return new->size;
+
+		}
+		else if(new > traverse && new < traverse->next ) {
+
+			new->next = traverse -> next;
+			traverse->next = new;
+			return new->size;
+		}
+			traverse = traverse -> next;
+
+	}
+
 #ifdef DEBUG_0
+
     printf("k_mem_dealloc: freeing 0x%x\r\n", (U32) ptr);
 #endif /* DEBUG_0 */
     return RTX_OK;
