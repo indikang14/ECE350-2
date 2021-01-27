@@ -55,7 +55,7 @@ U32 g_k_stacks[MAX_TASKS][KERN_STACK_SIZE >> 2] __attribute__((aligned(8)));
 // blocks of memory which are unallocated
 typedef struct free_node {
     unsigned int size; // contains the 8 Bytes of overhead
-    struct __free_node *next 
+    struct __free_node *next;
 } free_node;
 
 // blocks of memory which are allocated
@@ -72,15 +72,21 @@ int k_mem_init(void) {
 
 	unsigned int end_addr = (unsigned int) &Image$$ZI_DATA$$ZI$$Limit;
     managed_memory_start = (unsigned int*) end_addr;
-    
+
     // there is no memory available return -1
     if ( end_addr >= last_valid_address ) {
     	return RTX_ERR;
     }
 
-    head = managed_memory_start;
-    head->size = last_valid_address - end_addr;
+    head = (free_node *) managed_memory_start;
+    head->size = last_valid_address - (unsigned int) managed_memory_start;
     head->next = NULL;
+
+    printf("managed_memory_start: 0x%x\r\n", managed_memory_start);
+    printf("last_valid_address: 0x%x\r\n", last_valid_address);
+    printf("head_size: %d\r\n", head->size);
+    printf("head_struct_size: %d\r\n", sizeof( *head ));
+    printf("head_location: %x\r\n", head );
 
     #ifdef DEBUG_0
 		printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
