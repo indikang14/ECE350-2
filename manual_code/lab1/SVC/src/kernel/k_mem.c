@@ -55,7 +55,7 @@ U32 g_k_stacks[MAX_TASKS][KERN_STACK_SIZE >> 2] __attribute__((aligned(8)));
 // blocks of memory which are unallocated
 typedef struct free_node {
     unsigned int size; // contains the 8 Bytes of overhead
-    struct __free_node *next;
+    struct free_node *next;
 } free_node;
 
 // blocks of memory which are allocated
@@ -112,10 +112,21 @@ int k_mem_dealloc(void *ptr) {
 }
 
 int k_mem_count_extfrag(size_t size) {
+	unsigned int count = 0;
+	free_node * current = head;
+
+	while (current != NULL) {
+		if (current->size <= size) {
+			count++;
+		};
+		current = current->next;
+	};
+
 #ifdef DEBUG_0
     printf("k_mem_extfrag: size = %d\r\n", size);
+    printf("k_mem_extfrag: count = %d\r\n", count);
 #endif /* DEBUG_0 */
-    return RTX_OK;
+    return count;
 }
 
 /*
