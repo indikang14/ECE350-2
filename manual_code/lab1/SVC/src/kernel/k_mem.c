@@ -48,7 +48,6 @@ U32 g_k_stacks[MAX_TASKS][KERN_STACK_SIZE >> 2] __attribute__((aligned(8)));
  *===========================================================================
  *                            FUNCTIONS
  *===========================================================================
- 
 
  */
 
@@ -101,6 +100,73 @@ void* k_mem_alloc(size_t size) {
 #ifdef DEBUG_0
     printf("k_mem_alloc: requested memory size = %d\r\n", size);
 #endif /* DEBUG_0 */
+    //0. edge case
+    if (size == 0) return NULL;
+    //1. Traverse linked list, find first node where node->size >= (size + node overhead)
+    free_node *currnode = head;
+    free_node *prevnode = NULL;
+    unsigned int real_req_size = size + sizeof(*currnode);
+    while (currnode != NULL) {
+    	if (currnode->size >= real_req_size) {
+    		break;
+    	}
+    	else {
+    		prevnode = currnode;
+    		currnode = currnode->next;
+    	}
+    }
+    if (currnode == NULL) return NULL; //couldn't find a big enough free_node, allocation fails
+
+    //2. currnode is a freenode with size >= real_size, prevnode comes before currnode. handle > and = cases indiv.
+    if (currnode->size == real_req_size) {
+    	//no splitting. remove node from list. replace free_node bytes with header.
+    	if (prevnode != NULL) {
+    		prevnode->next = currnode->next; //removing currnode from the linked list
+    	} else { //then currnode is head, and we're taking all of head's available memory
+    		head = NULL; //just change the address pointed to by head to be NULL
+    	}
+    	//at the address pointed to by currnode is a free_node. change that to a header
+    	header *header_p = (header *) currnode;
+    	header_p->size = real_req_size;
+    	header_p->padding = 0;
+    	return header_p + sizeof(*header_p); //return pointer to start of memory block
+    } else if (currnode->size > real_req_size) {
+    	//have to split the free_node.
+    	if (currnode->size - real_req_size - sizeof(*currnode) < sizeof(*currnode) + 1) {
+    		//not enough bytes to split and have enough bytes left over for node overhead + 1 byte. e.g.:
+    		//17 - 1 - 8 < 8 + 1
+    		//8 < 8+1
+    		//have to allocate whole block
+    		if (prevnode != NULL) {
+				prevnode->next = currnode->next; //removing currnode from the linked list
+			} else { //then currnode is head, and we're taking all of head's available memory
+				head = NULL; //just change the address pointed to by head to be NULL
+			}
+			//at the address pointed to by currnode is a free_node. change that to a header
+			unsigned int currnodeSize = currnode->size; //note: not the requested size
+			header *header_p = (header *) currnode;
+			header_p->size = currnodeSize;
+			header_p->padding = 0;
+			return header_p + currnodeSize - real_req_size; //return pointer such that real_req_size number of bytes is at the end of the physical memory block
+    	} else {
+    		//enough bytes in the remaining free_node to split it.
+    		//we'll allocate from the top of the block. therefore create new freenode below memory to be allocate
+    		free_node *newnode = currnode + real_req_size;
+    		newnode->size = currnode->size - real_req_size;
+    		newnode->next = currnode->next;
+    		if (prevnode != NULL) {
+    			prevnode->next = newnode;
+    		} else { //currnode was head
+    			head = newnode;
+    		}
+    		//new free_node created, now change the old free_node to allocated block
+    		//at the address pointed to by currnode is a free_node. change that to a header
+			header *header_p = (header *) currnode;
+			header_p->size = real_req_size;
+			header_p->padding = 0;
+			return header_p + sizeof(*header_p); //return pointer to start of memory block
+    	}
+    }
     return NULL;
 }
 
