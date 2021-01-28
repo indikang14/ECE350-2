@@ -97,6 +97,7 @@ int k_mem_init(void) {
 }
 
 void* k_mem_alloc(size_t size) {
+	printf("################# K_MEM_ALLOC() #################\r\n");
 #ifdef DEBUG_0
     printf("k_mem_alloc: requested memory size = %d\r\n", size);
 #endif /* DEBUG_0 */
@@ -115,10 +116,18 @@ void* k_mem_alloc(size_t size) {
     		currnode = currnode->next;
     	}
     }
-    if (currnode == NULL) return NULL; //couldn't find a big enough free_node, allocation fails
+    printf("prevnode pointer: 0x%x\r\n", prevnode);
+    printf("currnode pointer: 0x%x\r\n", currnode);
+    printf("currnode->size: %d\r\n", currnode->size);
+    printf("real_req_size: %d\r\n", real_req_size);
+    if (currnode == NULL) {
+    	printf("################# END K_MEM_ALLOC() #################\r\n");
+    	return NULL; //couldn't find a big enough free_node, allocation fails
+    }
 
     //2. currnode is a freenode with size >= real_size, prevnode comes before currnode. handle > and = cases indiv.
     if (currnode->size == real_req_size) {
+    	printf("CASE: free node size == total req size\r\n");
     	//no splitting. remove node from list. replace free_node bytes with header.
     	if (prevnode != NULL) {
     		prevnode->next = currnode->next; //removing currnode from the linked list
@@ -129,10 +138,12 @@ void* k_mem_alloc(size_t size) {
     	header *header_p = (header *) currnode;
     	header_p->size = real_req_size;
     	header_p->padding = 0;
-    	return header_p + sizeof(*header_p); //return pointer to start of memory block
+    	printf("################# END K_MEM_ALLOC() #################\r\n");
+    	return (void*) ( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     } else if (currnode->size > real_req_size) {
     	//have to split the free_node.
     	if (currnode->size - real_req_size - sizeof(*currnode) < sizeof(*currnode) + 1) {
+    		printf("CASE: freenode size > total req size, but not large enough to split\r\n");
     		//not enough bytes to split and have enough bytes left over for node overhead + 1 byte. e.g.:
     		//17 - 1 - 8 < 8 + 1
     		//8 < 8+1
@@ -147,11 +158,13 @@ void* k_mem_alloc(size_t size) {
 			header *header_p = (header *) currnode;
 			header_p->size = currnodeSize;
 			header_p->padding = 0;
-			return header_p + currnodeSize - real_req_size; //return pointer such that real_req_size number of bytes is at the end of the physical memory block
+			printf("################# END K_MEM_ALLOC() #################\r\n");
+			return (void *) (((unsigned char *)header_p) + sizeof(*header_p)); //return pointer such that real_req_size number of bytes is at the end of the physical memory block
     	} else {
+    		printf("CASE: freenode size > total req size, and large enough to split\r\n");
     		//enough bytes in the remaining free_node to split it.
-    		//we'll allocate from the top of the block. therefore create new freenode below memory to be allocate
-    		free_node *newnode = currnode + real_req_size;
+    		//we'll allocate from the top of the block. therefore create new freenode below memory to be allocated
+    		free_node *newnode = (free_node *)((unsigned char *)currnode + real_req_size);
     		newnode->size = currnode->size - real_req_size;
     		newnode->next = currnode->next;
     		if (prevnode != NULL) {
@@ -164,14 +177,87 @@ void* k_mem_alloc(size_t size) {
 			header *header_p = (header *) currnode;
 			header_p->size = real_req_size;
 			header_p->padding = 0;
-			return header_p + sizeof(*header_p); //return pointer to start of memory block
+			printf("################# END K_MEM_ALLOC() #################\r\n");
+			return (void *)( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     	}
     }
     return NULL;
 }
 
-int k_mem_dealloc(void *ptr) {
+int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of allocated mem block
+
+	/*
+	 * replace header with free node
+	 */
+	free_node *new; //replacing header
+	header *current; //current header of ptr
+	unsigned char *addr = (unsigned char *) ptr; //copy of ptr
+	addr = addr - sizeof(header); //ptr arithmetic to get start of header
+	printf("pointer argument provided: 0x%x\r\n", ptr);
+	printf ("starting address of free block is 0x%x\r\n", addr);
+	current = (header *) addr; //point to start of header
+	new = (free_node *) addr; //treat the start of header as start of free node
+	new->size = current->size; //replace header size with free size
+	new->next = NULL;
+	printf ("confirm starting address of free block is 0x%x\r\n", new);
+
+	//at this point, new is the free node overhead for the freed block of memory
+	//
+
+	/**
+	 * check for coalescing and merge blocks
+	 ***/
+
+	/**
+	 * address ordered policy
+	 */
+
+	free_node* traverse = head;
+	//if (head)
+
+	//new has info on what used to be allocated
+	if(head->next == NULL ) { //no fragments yet
+		if((unsigned char *)new == (unsigned char *)head - new->size) { // if freed memory is adjacent to head merge them
+			printf("in here because memory block adjacent to head;");
+			unsigned int totalSize = head->size + new->size;
+			head = new;
+			head->size = totalSize;
+			head->next = NULL;
+		}
+		else if(head > new) { // if not adjacent just free the block
+			printf("in here because memory block freed at an earlier address than head");
+			head = new;
+			head->next = traverse;
+		}
+		return 0;
+	}
+	//if on the other hand it already has fragments
+	//value of traverse = head, head has a non-NULL next value
+	while(traverse->next != NULL) { // traverse the list
+		printf("traversing the list and coalescing");
+
+
+		if((unsigned char *)new == (unsigned char *)traverse + traverse->size  ) { // if adjacent memory to the
+			traverse -> size += new->size;
+			return new->size;
+		}
+		else if((unsigned char *)new == (unsigned char *)traverse - traverse->size) {
+			traverse = new ;
+			traverse ->size += new->size;
+			return new->size;
+		}
+		else if(new > traverse && new < traverse->next ) {
+
+			new->next = traverse -> next;
+			traverse->next = new;
+			return new->size;
+		}
+			traverse = traverse -> next;
+
+	}
+
 #ifdef DEBUG_0
+
     printf("k_mem_dealloc: freeing 0x%x\r\n", (U32) ptr);
 #endif /* DEBUG_0 */
     return RTX_OK;
@@ -182,7 +268,7 @@ int k_mem_count_extfrag(size_t size) {
 	free_node * current = head;
 
 	while (current != NULL) {
-		if (current->size <= size) {
+		if (current->size < size) {
 			count++;
 		};
 		current = current->next;
