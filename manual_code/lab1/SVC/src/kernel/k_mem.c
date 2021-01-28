@@ -329,7 +329,7 @@ int k_mem_count_extfrag(size_t size) {
 	free_node * current = head;
 
 	while (current != NULL) {
-		if (current->size <= size) {
+		if (current->size < size) {
 			count++;
 		};
 		current = current->next;
