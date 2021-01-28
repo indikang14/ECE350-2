@@ -216,7 +216,7 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	//if (head)
 
 	//new has info on what used to be allocated
-	if(head->next == NULL ) { //no fragments yet
+	if(head->next == NULL ) { //no fragments yet OR freeing after the whole memory region was allocated
 		if((unsigned char *)new == (unsigned char *)head - new->size) { // if freed memory is adjacent to head merge them
 			printf("in here because memory block adjacent to head \r\n");
 			unsigned int totalSize = head->size + new->size;
@@ -224,10 +224,20 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 			head->size = totalSize;
 			head->next = NULL;
 		}
+		else if ((unsigned char*)new == (unsigned char *)head + head->size) {
+			printf("in here because memory block adjacent to head \r\n");
+			unsigned int totalSize = head->size + new->size;
+			head -> size = totalSize;
+		}
 		else if(head > new) { // if not adjacent just free the block
 			printf("in here because memory block freed at an earlier address than head \r\n");
 			head = new;
 			head->next = traverse;
+		}
+		else if(head < new ) { //if not adjacent and at a higher address than head
+			printf("in here because memory block freed at a higher address than head \r\n");
+			head->next = new;
+
 		}
 		return 0;
 	}
@@ -291,10 +301,18 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 			return 0;
 		}
 
-		else if(traverse->next == NULL) { //don't know what to do here
-					return -1;
+		else if(traverse->next == NULL && traverse != head) { //this is case where free memory is last block of the memory region
+			unsigned int totalSize = traverse->size + new->size;
+			traverse -> size = totalSize;
+					return 0;
 		}
 			traverse = traverse -> next;
+
+	}
+
+	if(head == NULL) { // all memory is allocated in fragments and we are now  freeing
+		head = new;
+		head -> next = NULL;
 
 	}
 
