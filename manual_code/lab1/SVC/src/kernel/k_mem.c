@@ -189,6 +189,9 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	/*
 	 * replace header with free node
 	 */
+	if(ptr == NULL) { // if there is nothing to be freed
+		return -1;
+	}
 	free_node *new; //replacing header
 	header *current; //current header of ptr
 	unsigned char *addr = (unsigned char *) ptr; //copy of ptr
