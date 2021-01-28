@@ -99,10 +99,10 @@ int k_mem_init(void) {
 void* k_mem_alloc(size_t size) {
 	printf("################# K_MEM_ALLOC() #################\r\n");
 #ifdef DEBUG_0
-    printf("k_mem_alloc: requested memory size = %d\r\n", size);
+    printf("k_mem_alloc: requested memory size = %u\r\n", size);
 #endif /* DEBUG_0 */
     //0. edge case
-    if (size == 0) return NULL;
+    if (size == 0 || size > 0xFFFFFFF7) return NULL;
     //1. Traverse linked list, find first node where node->size >= (size + node overhead)
     free_node *currnode = head;
     free_node *prevnode = NULL;
@@ -118,8 +118,8 @@ void* k_mem_alloc(size_t size) {
     }
     printf("prevnode pointer: 0x%x\r\n", prevnode);
     printf("currnode pointer: 0x%x\r\n", currnode);
-    printf("currnode->size: %d\r\n", currnode->size);
-    printf("real_req_size: %d\r\n", real_req_size);
+    printf("currnode->size: %u\r\n", currnode->size);
+    printf("real_req_size: %u\r\n", real_req_size);
     if (currnode == NULL) {
     	printf("################# END K_MEM_ALLOC() #################\r\n");
     	return NULL; //couldn't find a big enough free_node, allocation fails
@@ -161,7 +161,7 @@ void* k_mem_alloc(size_t size) {
 			printf("################# END K_MEM_ALLOC() #################\r\n");
 			return (void *) (((unsigned char *)header_p) + sizeof(*header_p)); //return pointer such that real_req_size number of bytes is at the end of the physical memory block
     	} else {
-    		printf("CASE: freenode size > total req size, and large enough to split\r\n");
+    		//printf("CASE: freenode size > total req size, and large enough to split\r\n");
     		//enough bytes in the remaining free_node to split it.
     		//we'll allocate from the top of the block. therefore create new freenode below memory to be allocated
     		free_node *newnode = (free_node *)((unsigned char *)currnode + real_req_size);
