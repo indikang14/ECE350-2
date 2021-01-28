@@ -218,14 +218,14 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	//new has info on what used to be allocated
 	if(head->next == NULL ) { //no fragments yet
 		if((unsigned char *)new == (unsigned char *)head - new->size) { // if freed memory is adjacent to head merge them
-			printf("in here because memory block adjacent to head;");
+			printf("in here because memory block adjacent to head \r\n");
 			unsigned int totalSize = head->size + new->size;
 			head = new;
 			head->size = totalSize;
 			head->next = NULL;
 		}
 		else if(head > new) { // if not adjacent just free the block
-			printf("in here because memory block freed at an earlier address than head");
+			printf("in here because memory block freed at an earlier address than head \r\n");
 			head = new;
 			head->next = traverse;
 		}
@@ -233,28 +233,71 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	}
 	//if on the other hand it already has fragments
 	//value of traverse = head, head has a non-NULL next value
-	while(traverse->next != NULL) { // traverse the list
-		printf("traversing the list and coalescing");
+	free_node* prevNode = NULL; // keep track of next and previous nodes of current free node that is being inserted into free list
+	free_node* nextNode = NULL;
+	while(traverse != NULL) { // traverse the list
+		printf("traversing the list and coalescing \r\n");
 
+        if (new < traverse) { //if freed memory block is at a lower address than current node aka traverse has to be head
+			new->next = traverse; //new free node is at the start of the LL pointing to higher address
+			head = new; // head is at the front of the LL
+			nextNode = traverse; //nextNode is now the previous head
+			if((unsigned char *) nextNode == (unsigned char *)new + new->size) { //if new head is adjacent to nextNode...
+				unsigned int totalSize = head->size + nextNode->size;
+				head->size = totalSize;
+				head->next = nextNode -> next;
+				return 0;
 
-		if((unsigned char *)new == (unsigned char *)traverse + traverse->size  ) { // if adjacent memory to the
-			traverse -> size += new->size;
-			return new->size;
-		}
-		else if((unsigned char *)new == (unsigned char *)traverse - traverse->size) {
-			traverse = new ;
-			traverse ->size += new->size;
-			return new->size;
+			}
+			return 0;
+
 		}
 		else if(new > traverse && new < traverse->next ) {
 
+			printf("new free block in the middle of of other two free blocks! \r\n");
+
 			new->next = traverse -> next;
+			nextNode = new->next;
 			traverse->next = new;
-			return new->size;
+			prevNode = traverse;
+
+			if ((unsigned char*) new == (unsigned char*) prevNode + prevNode->size
+					&& (unsigned char*) new !=  (unsigned char*) nextNode - new->size  ) {// if prevNode and current are adjacent only
+				unsigned int totalSize = prevNode->size + new->size;
+				prevNode->size = totalSize;
+				prevNode->next = new->next;
+				return 0;
+			}
+			else if ((unsigned char*) new == (unsigned char*) nextNode - new->size
+					&& (unsigned char*) new !=  (unsigned char*) prevNode + prevNode->size) { // if nextNode and current are adjacent only
+				unsigned int totalSize = nextNode->size + new->size;
+								new->size = totalSize;
+								new->next = nextNode->next;
+								return 0;
+
+			}
+
+			else if ((unsigned char*) new == (unsigned char*) nextNode - new->size
+					&& (unsigned char*) new ==  (unsigned char*) prevNode + prevNode->size) { // if all 3 nodes are adjacent
+
+				unsigned int totalSize = prevNode->size + new->size + nextNode->size;
+								prevNode->size = totalSize;
+								prevNode->next = nextNode->next;
+								return 0;
+
+
+
+			}
+			return 0;
+		}
+
+		else if(traverse->next == NULL) { //don't know what to do here
+					return -1;
 		}
 			traverse = traverse -> next;
 
 	}
+
 
 #ifdef DEBUG_0
 
