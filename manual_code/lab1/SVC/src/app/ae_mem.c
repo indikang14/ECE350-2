@@ -53,6 +53,42 @@ int test_mem(void) {
     if (n == 0) {
         result |= BIT(3);
     }
+    
+    // start of k_mem_count_extfrag testing
+
+    p[0] = k_mem_alloc(8);
+    p[1] = k_mem_alloc(16);
+    p[2] = k_mem_alloc(32);
+   	p[3] = k_mem_alloc(64);
+
+   	if (k_mem_count_extfrag(256) == 0) {
+   		result |= BIT(4);
+   	}
+
+   	k_mem_dealloc(p[0]);
+
+   	if (k_mem_count_extfrag(16) == 0 && k_mem_count_extfrag(17) == 1) {
+   		result |= BIT(5);
+   	}
+
+    k_mem_dealloc(p[2]);
+
+    if (k_mem_count_extfrag(40) == 1 && k_mem_count_extfrag(41) == 2) {
+    	result |= BIT(6);
+    }
+
+    k_mem_dealloc(p[1]);
+
+    if (k_mem_count_extfrag(80) == 0 && k_mem_count_extfrag(81) == 1) {
+    	result |= BIT(7);
+    }
+
+    k_mem_dealloc(p[3]);
+
+    if (k_mem_count_extfrag(256) == 0) {
+    	result |= BIT(8);
+    }
+    
     return result;
 }
 /*
