@@ -74,7 +74,7 @@ typedef struct free_node {
 // blocks of memory which are allocated
 typedef struct header {
     unsigned int size; // contains the 8 Bytes of overhead
-    unsigned int padding; // needed to make size_of( struct header ) == size_of( struct free_node )
+    unsigned int taskID; // needed to make size_of( struct header ) == size_of( struct free_node )
 } header;
 
 free_node * head;
@@ -136,7 +136,7 @@ void* k_mem_alloc(size_t size) {
     //1. Traverse linked list, find first node where node->size >= (size + node overhead)
     free_node *currnode = head;
     free_node *prevnode = NULL;
-    unsigned int real_req_size = size + sizeof(*currnode);
+    unsigned int real_req_size = sizeof(*currnode) + (size % 8 == 0 ? size : (size / 8 + 1) * 8); //overhead + size rounded up to nearest 8 bytes
     while (currnode != NULL) {
     	if (currnode->size >= real_req_size) {
     		break;
@@ -167,16 +167,16 @@ void* k_mem_alloc(size_t size) {
     	//at the address pointed to by currnode is a free_node. change that to a header
     	header *header_p = (header *) currnode;
     	header_p->size = real_req_size;
-    	header_p->padding = 0;
+    	header_p->taskID = (unsigned int) gp_current_task->tid;
     	printf("################# END K_MEM_ALLOC() #################\r\n");
     	return (void*) ( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     } else if (currnode->size > real_req_size) {
     	//have to split the free_node.
-    	if (currnode->size - real_req_size - sizeof(*currnode) < sizeof(*currnode) + 1) {
+    	if (currnode->size - real_req_size < sizeof(*currnode) + 8) {
     		printf("CASE: freenode size > total req size, but not large enough to split\r\n");
-    		//not enough bytes to split and have enough bytes left over for node overhead + 1 byte. e.g.:
-    		//17 - 1 - 8 < 8 + 1
-    		//8 < 8+1
+    		//not enough bytes to split and have enough bytes left over for node overhead + 8 bytes. e.g.:
+    		//24 - 16 < 8 + 8
+    		//currnode size - (want to alloc 8 bytes + overhead) < remaining overhead + remaining min size
     		//have to allocate whole block
     		if (prevnode != NULL) {
 				prevnode->next = currnode->next; //removing currnode from the linked list
@@ -187,7 +187,7 @@ void* k_mem_alloc(size_t size) {
 			unsigned int currnodeSize = currnode->size; //note: not the requested size
 			header *header_p = (header *) currnode;
 			header_p->size = currnodeSize;
-			header_p->padding = 0;
+			header_p->taskID = (unsigned int) gp_current_task->tid;
 			printf("################# END K_MEM_ALLOC() #################\r\n");
 			return (void *) (((unsigned char *)header_p) + sizeof(*header_p)); //return pointer such that real_req_size number of bytes is at the end of the physical memory block
     	} else {
@@ -206,7 +206,7 @@ void* k_mem_alloc(size_t size) {
     		//at the address pointed to by currnode is a free_node. change that to a header
 			header *header_p = (header *) currnode;
 			header_p->size = real_req_size;
-			header_p->padding = 0;
+			header_p->taskID = (unsigned int) gp_current_task->tid;
 			printf("################# END K_MEM_ALLOC() #################\r\n");
 			return (void *)( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     	}
@@ -229,6 +229,10 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	printf("pointer argument provided: 0x%x\r\n", ptr);
 	printf ("starting address of free block is 0x%x\r\n", addr);
 	current = (header *) addr; //point to start of header
+	//check that correct task is deallocating this memory block
+	if (current->taskID != (unsigned int) gp_current_task->tid) {
+		return -1;
+	}
 	new = (free_node *) addr; //treat the start of header as start of free node
 	new->size = current->size; //replace header size with free size
 	new->next = NULL;
