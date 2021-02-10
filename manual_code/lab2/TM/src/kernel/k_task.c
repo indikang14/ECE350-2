@@ -67,6 +67,7 @@ TCB             *gp_current_task = NULL;	// the current RUNNING task
 TCB             g_tcbs[MAX_TASKS];			// an array of TCBs
 RTX_TASK_INFO   g_null_task_info;			// The null task info
 U32             g_num_active_tasks = 0;		// number of non-dormant tasks
+TCB 			*TCBhead;						//points to starting TCB not NULL
 
 /*---------------------------------------------------------------------------
 The memory map of the OS image may look like the following:
@@ -165,7 +166,9 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     RTX_TASK_INFO *p_taskinfo = &g_null_task_info;
     g_num_active_tasks = 0;
 
-    if (num_tasks > MAX_TASKS) {
+
+
+    if (num_tasks >= MAX_TASKS) {
     	return RTX_ERR;
     }
 
@@ -175,13 +178,24 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     p_tcb->priv     = 1;
     p_tcb->tid      = TID_NULL;
     p_tcb->state    = RUNNING;
+    p_tcb->next 	= NULL; //initialize head of TCBs
+    TCBhead 		= NULL;
     g_num_active_tasks++;
     gp_current_task = p_tcb;
 
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
+    	p_tcb->next = &g_tcbs[i+1]; //join the linked list of TCBs LL only has active tasks
+
+
+
         TCB *p_tcb = &g_tcbs[i+1];
+
+        if(i + 1 == 1) {
+            	TCBhead =  p_tcb; // there was another task other than NULL, make that head
+          }
+
         if (k_tsk_create_new(p_taskinfo, p_tcb, i+1) == RTX_OK) {
         	g_num_active_tasks++;
         }
@@ -218,8 +232,13 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
         return RTX_ERR;
     }
 
+    //initialize the taskInfo params
     p_tcb ->tid = tid;
     p_tcb->state = READY;
+    p_taskinfo->prio = p_tcb->prio;
+    p_taskinfo->priv = 0;
+    p_taskinfo->tid = tid;
+
 
     /*---------------------------------------------------------------
      *  Step1: allocate kernel stack for the task
@@ -379,9 +398,53 @@ int k_tsk_yield(void)
 
 int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size)
 {
+	//initialize
+	//RTX_TASK_INFO* newTaskInfo;
+	TCB* newTaskBlock;
+	BOOL taskFound = 0;//flag to indicate TCB created
+
+	TCB* traverse;
+
+	//houses all the non dormant and used TCBS
+	for(traverse = TCBhead; (traverse != NULL || taskFound!=0)  ; traverse = traverse->next ) {
+
+		printf("address of traverse 0x%x \r\n", traverse);
+
+			//if you find a dormant or unused TCB in between two active TCBs...
+		if((traverse->next->tid - traverse->tid) > 1) {
+
+			task = traverse->tid +1;
+			newTaskBlock = &g_tcbs[task];
+			newTaskBlock->next = traverse->next;
+			traverse->next = newTaskBlock;
+			taskFound = 1;
+		}
+			//if you find an unused TCB at the end of the linked  list
+		else if (traverse->next == NULL) {
+			*task = traverse->tid +1;
+			newTaskBlock =  &g_tcbs[task];
+			traverse->next = newTaskBlock;
+			taskFound = 1;
+
+		}
+	}
+
+// initialize TCB structure
+	//newTaskBlock->prio = prio;
+	//newTaskBlock->state = READY;
+	newTaskBlock->priv = 0;
+	newTaskBlock->tid = (U8) task;
+	newTaskBlock->TcbInfo->tid = *task;
+
+	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) != RTX_OK) {
+		return RTX_ERR;
+	}
+
+
+
 #ifdef DEBUG_0
     printf("k_tsk_create: entering...\n\r");
-    printf("task = 0x%x, task_entry = 0x%x, prio=%d, stack_size = %d\n\r", task, task_entry, prio, stack_size);
+    printf("task = 0x%x, task_entry = 0x% /x, prio=%d, stack_size = %d\n\r", task, task_entry, prio, stack_size);
 #endif /* DEBUG_0 */
     return RTX_OK;
 
