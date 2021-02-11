@@ -52,7 +52,7 @@
  */
 
 extern TCB *gp_current_task;
-extern U8 memBlockOwner;
+extern BOOL kernelOwnedMemory;
 
 /*
  *===========================================================================
