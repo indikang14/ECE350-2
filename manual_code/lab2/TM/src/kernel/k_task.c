@@ -483,21 +483,83 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 
 }
 
-void k_tsk_exit(void) 
+void k_tsk_exit(void)
 {
 #ifdef DEBUG_0
     printf("k_tsk_exit: entering...\n\r");
 #endif /* DEBUG_0 */
+    TCB *p_tcb_old = NULL;
+
+    if (gp_current_task == NULL) {
+    	return;
+    }
+
+    p_tcb_old = gp_current_task;
+    gp_current_task = scheduler();
+
+    if ( gp_current_task == NULL  ) {
+    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	return;
+    }
+
+    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    if (gp_current_task != p_tcb_old) {
+    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+        p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+        k_tsk_switch(p_tcb_old);            // switch stacks
+    }
+
+    // remove from linked list
+    if (TCBhead->tid == p_tcb_old->tid) {
+    	TCBhead = TCBhead->next;
+        return;
+    }
+
+    TCB* prev = TCBhead;
+    // find task
+    while (prev->next != NULL || prev->next->tid != p_tcb_old->tid) {
+    	prev = prev->next;
+    }
+    if (prev->next == NULL) {
+    	return;
+    }
+
+    // found the thing
+    prev->next = prev->next->next;
+
+    // still need to dealloc
+
     return;
 }
 
-int k_tsk_set_prio(task_t task_id, U8 prio) 
+int k_tsk_set_prio(task_t task_id, U8 prio)
 {
 #ifdef DEBUG_0
     printf("k_tsk_set_prio: entering...\n\r");
     printf("task_id = %d, prio = %d.\n\r", task_id, prio);
 #endif /* DEBUG_0 */
-    return RTX_OK;    
+    TCB* traverse = TCBhead;
+
+    // check valid prio
+    if (prio != HIGH && prio != MEDIUM && prio != LOW && prio != LOWEST ) {
+      return RTX_ERR;
+    }
+
+    // find task
+    while (traverse != NULL || traverse->tid != task_id) {
+      traverse = traverse->next;
+    }
+    if (traverse == NULL || traverse->tid == TID_NULL) {
+      return RTX_ERR;
+    }
+
+    // check that the current task is has edit privledges
+    if (gp_current_task->priv == 0 && traverse->priv == 1) {
+      return RTX_ERR;
+    }
+
+    traverse->prio = prio;
+    return RTX_OK;
 }
 
 int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
@@ -505,23 +567,40 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
 #ifdef DEBUG_0
     printf("k_tsk_get: entering...\n\r");
     printf("task_id = %d, buffer = 0x%x.\n\r", task_id, buffer);
-#endif /* DEBUG_0 */    
+#endif /* DEBUG_0 */
     if (buffer == NULL) {
         return RTX_ERR;
     }
-    /* The code fills the buffer with some fake task information. 
+    TCB* traverse = TCBhead;
+    while (traverse != NULL || traverse->tid != task_id) {
+      traverse = traverse->next;
+    }
+    if (traverse == NULL) {
+      return RTX_ERR;
+    }
+    /* The code fills the buffer with some fake task information.
        You should fill the buffer with correct information    */
-    buffer->tid = task_id;
-    buffer->prio = 99;
-    buffer->state = MEDIUM;
-    buffer->priv = 0;
-    buffer->ptask = 0x0;
-    buffer->k_sp = 0xBEEFDEAD;
-    buffer->k_stack_size = KERN_STACK_SIZE;
-    buffer->u_sp = 0xDEADBEEF;
-    buffer->u_stack_size = 0x200;
+    buffer->tid = traverse->tid;
+    buffer->prio = traverse->prio;
+    buffer->state = traverse->state;
+    buffer->priv = traverse->priv;
+    // task entry ?
+    // buffer->ptask = traverse->ptask;
+    buffer->k_sp = *g_k_stacks[task_id];
 
-    return RTX_OK;     
+    // stack size?
+    // buffer->k_stack_size =;
+
+    if (traverse->prio == 0) {
+      buffer->u_sp = NULL;
+      buffer->u_stack_size = NULL;
+    } else {
+      buffer->u_sp = *g_p_stacks[task_id];
+      // stack size?
+      // buffer->u_stack_size = ;
+    }
+
+    return RTX_OK;
 }
 
 int k_tsk_ls(task_t *buf, int count){
