@@ -68,6 +68,8 @@ TCB             g_tcbs[MAX_TASKS];			// an array of TCBs
 RTX_TASK_INFO   g_null_task_info;			// The null task info
 U32             g_num_active_tasks = 0;		// number of non-dormant tasks
 
+
+
 /*---------------------------------------------------------------------------
 The memory map of the OS image may look like the following:
 
@@ -136,14 +138,177 @@ The memory map of the OS image may look like the following:
  *
  *****************************************************************************/
 
+typedef struct priority_queue {
+    TCB ** heap;
+    int size;
+} priority_queue;
+
+priority_queue * global_q = NULL;
+
+// typedef struct tcb {
+//     struct tcb *next;   /**> next tcb, not used in this example         */
+//     U32        *msp;    /**> msp of the task, TCB_MSP_OFFSET = 4        */
+//     U8          tid;    /**> task id                                    */
+//     U8          prio;   /**> Execution priority                         */
+//     U8          state;  /**> task state                                 */
+//     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
+//     U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
+// } TCB;
+
+//               EnQueue    DeQueue     Peek
+// Binary Heap	O(log n)	O(log n)	O(1)
+
+TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
+TCB * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
+int old_priority = NULL; // if a thread switched priority I need the previous state 
+
+// note: scheduler is called when task is 
 TCB *scheduler(void)
 {
-    task_t tid = gp_current_task->tid;
-    return &g_tcbs[(++tid)%g_num_active_tasks];
+    if ( global_q == NULL ) {  // initialize the queue
 
+        // build the priority_queue datastructure
+        priority_queue local_q;  
+        global_q = &local_q;
+        global_q->size = 0;
+
+        for ( int i=0; i<MAX_TASKS; i++) {
+            if ( sizeof(g_tcbs[i]) == sizeof( TCB ) && ( g_tcbs[i].state != READY || g_tcbs[i].state != RUNNING ) ) { // schedule her up
+                enqueue( &g_tcbs[i] );
+            }
+        }
+
+    } else { // check if a state has changed, this could be called from created, exits, prio changes
+
+        if ( thread_changed_event != NULL ) {
+
+            if ( thread_changed_event == "CREATED" ) {
+                enqueue( thread_changed_p );
+            } else if ( thread_changed_event == "EXITED" ) {
+                remove( thread_changed_p );
+            } else if ( thread_changed_event == "PRIORITY" ) {
+                changePriority( thread_changed_p );
+            }
+
+            clearEvent();
+        }
+    }
+
+    return get_highest_priority();
 }
 
+// resets the global variables
+void clearEvent() {
+    thread_changed_event = NULL;
+    thread_changed_p = NULL; 
+    old_priority = NULL;
+}
 
+// swap two TCBS on the global queue
+void swap(TCB * p1, TCB * p2) {
+
+    global_q->heap[p1->scheduler_index] = p2;
+    global_q->heap[p2->scheduler_index] = p1;
+
+    p1->scheduler_index = p2->scheduler_index;
+    p2->scheduler_index = p1->scheduler_index;
+}
+
+// removes a specific thread from the priority queue
+void remove( TCB * p ) {
+
+    p->prio = PRIO_RT - 1; // make the node go to the top of the heap
+ 
+    // Shift the node to the root
+    moveUp( p->scheduler_index );
+ 
+    // Extract the node
+    dequeue();
+}
+
+// changes the priority of a thread
+void changePriority( TCB * p ) {
+
+    if ( p->prio < old_priority ) {
+        p->scheduler_index = moveUp( p->scheduler_index );
+    } else {
+        heapify( p->scheduler_index );
+    }
+
+    heapify( p->scheduler_index );
+}
+
+// deletes the max item and return
+TCB dequeue() {
+
+    TCB max = *global_q->heap[0];
+
+    // replace the first item with the last item
+    swap( &global_q->heap[0], &global_q->heap[ global_q->size - 1] );
+    global_q->size--;
+
+    // maintain the heap property by heapifying the 
+    // first item
+    heapify( 0 );
+    return max;
+}
+
+// moves the element up to the top
+int moveUp(int i) {
+    while (i != 0 && (*global_q->heap[(i - 1) / 2]).prio > (*global_q->heap[i]).prio) {
+        swap( &global_q->heap[(i - 1) / 2], &global_q->heap[i]);
+        i = (i - 1) / 2;
+    }
+
+    return i;
+}
+
+// add the thread to our heap at the appropriate position
+void enqueue( TCB * p ) {
+
+    if ( global_q->size >= MAX_TASKS ) {
+        printf("%s\n", "The heap is full. Cannot insert");
+        return;
+    }
+
+    // first insert at end and increment size
+    int i = global_q->size;
+    global_q->heap[global_q->size] = p;
+
+    global_q->size++;
+
+    // move up until the heap property satisfies
+    p->scheduler_index = moveUp(i);
+}
+
+// returns the minimum item of the heap
+TCB * get_highest_priority() {
+    return &global_q->heap[ 0 ];
+}
+
+// we are going to maintain a heap for the tcbs
+void heapify( int i )
+{
+    int smallest = i; 
+    int l = 2 * i + 1; 
+    int r = 2 * i + 2; 
+    int n = global_q->size; 
+    TCB * arr = global_q->heap;
+ 
+    // If left child is larger than root
+    if (l < n && arr[l].prio < arr[smallest].prio)
+        smallest = l;
+ 
+    // If right child is larger than largest so far
+    if (r < n && arr[r].prio < arr[smallest].prio)
+        smallest = r;
+ 
+    // If largest is not root
+    if (smallest != i) {
+        swap(&arr[i], &arr[smallest]);
+        heapify( smallest );
+    } 
+}
 
 /**************************************************************************//**
  * @brief       initialize all boot-time tasks in the system,
