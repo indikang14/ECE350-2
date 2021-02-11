@@ -69,6 +69,8 @@ RTX_TASK_INFO   g_null_task_info;			// The null task info
 U32             g_num_active_tasks = 0;		// number of non-dormant tasks
 TCB 			*TCBhead;						//points to starting TCB not NULL
 
+U8				memBlockOwner = 0; //TODO: needs to be initialized when gp_current_task is first set
+
 /*---------------------------------------------------------------------------
 The memory map of the OS image may look like the following:
 
@@ -183,6 +185,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     TCBhead 		= NULL;
     g_num_active_tasks++;
     gp_current_task = p_tcb;
+    memBlockOwner = gp_current_task->tid;
     TCB* oldTCB = p_tcb;
     TCB* newTCB;
 
@@ -296,7 +299,7 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
         //********************************************************************//
         //*** allocate user stack from the user space, not implemented yet ***//
         //********************************************************************//
-        *(--sp) = (U32) k_alloc_p_stack(tid);
+        *(--sp) = (U32) k_alloc_p_stack(p_taskinfo);
 
         // uR12, uR11, ..., uR0
         for ( int j = 0; j < 13; j++ ) {
@@ -381,6 +384,7 @@ int k_tsk_run_new(void)
     
     if ( gp_current_task == NULL  ) {
         gp_current_task = p_tcb_old;        // revert back to the old task
+        memBlockOwner = gp_current_task->tid;
         return RTX_ERR;
     }
     printf("address of current task: 0x%x \r\n",gp_current_task );
@@ -390,6 +394,8 @@ int k_tsk_run_new(void)
         p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
+
+    memBlockOwner = gp_current_task->tid;
 
     return RTX_OK;
 }
@@ -471,6 +477,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->priv = 0;
 	newTaskBlock->tid = (U8) *task;
 	newTaskBlock->TcbInfo->tid = *task;
+	newTaskBlock->TcbInfo->u_stack_size = stack_size;
 
 	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) != RTX_OK) {
 		return RTX_ERR;
@@ -499,6 +506,7 @@ void k_tsk_exit(void)
 
     if ( gp_current_task == NULL  ) {
     	gp_current_task = p_tcb_old;        // revert back to the old task
+    	memBlockOwner = gp_current_task->tid;
     	return;
     }
 
@@ -508,6 +516,7 @@ void k_tsk_exit(void)
         p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
+    memBlockOwner = gp_current_task->tid;
 
     // remove from linked list
     if (TCBhead->tid == p_tcb_old->tid) {

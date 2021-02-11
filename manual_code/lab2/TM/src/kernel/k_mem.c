@@ -44,10 +44,12 @@
  */
 
 #include "k_mem.h"
+#include "k_task.h"
 #include "Serial.h"
 #ifdef DEBUG_0
 #include "printf.h"
 #endif  /* DEBUG_0 */
+#define KERNEL_TASK_CODE -1
 
 /*
  *==========================================================================
@@ -92,9 +94,13 @@ U32* k_alloc_k_stack(task_t tid)
     return g_k_stacks[tid+1];
 }
 
-U32* k_alloc_p_stack(task_t tid)
+U32* k_alloc_p_stack(RTX_TASK_INFO *p_taskinfo)
 {
-    return g_p_stacks[tid+1];
+	memBlockOwner = KERNEL_TASK_CODE;
+	U8* lowestAddress = k_mem_alloc((size_t) p_taskinfo->u_stack_size);
+	memBlockOwner = gp_current_task->tid;
+	U8* stackHigh = lowestAddress + p_taskinfo->u_stack_size;
+    return (U32 *) stackHigh;
 }
 
 int k_mem_init(void) {
@@ -167,7 +173,7 @@ void* k_mem_alloc(size_t size) {
     	//at the address pointed to by currnode is a free_node. change that to a header
     	header *header_p = (header *) currnode;
     	header_p->size = real_req_size;
-    	header_p->taskID = (unsigned int) gp_current_task->tid;
+    	header_p->taskID = (unsigned int) memBlockOwner;
     	printf("################# END K_MEM_ALLOC() #################\r\n");
     	return (void*) ( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     } else if (currnode->size > real_req_size) {
@@ -187,7 +193,7 @@ void* k_mem_alloc(size_t size) {
 			unsigned int currnodeSize = currnode->size; //note: not the requested size
 			header *header_p = (header *) currnode;
 			header_p->size = currnodeSize;
-			header_p->taskID = (unsigned int) gp_current_task->tid;
+			header_p->taskID = (unsigned int) memBlockOwner;
 			printf("################# END K_MEM_ALLOC() #################\r\n");
 			return (void *) (((unsigned char *)header_p) + sizeof(*header_p)); //return pointer such that real_req_size number of bytes is at the end of the physical memory block
     	} else {
@@ -206,7 +212,7 @@ void* k_mem_alloc(size_t size) {
     		//at the address pointed to by currnode is a free_node. change that to a header
 			header *header_p = (header *) currnode;
 			header_p->size = real_req_size;
-			header_p->taskID = (unsigned int) gp_current_task->tid;
+			header_p->taskID = (unsigned int) memBlockOwner;
 			printf("################# END K_MEM_ALLOC() #################\r\n");
 			return (void *)( ((unsigned char *)header_p) + sizeof(*header_p)); //return pointer to start of memory block
     	}
@@ -230,7 +236,7 @@ int k_mem_dealloc(void *ptr) { //ptr represents end of alloc header, start of al
 	printf ("starting address of free block is 0x%x\r\n", addr);
 	current = (header *) addr; //point to start of header
 	//check that correct task is deallocating this memory block
-	if (current->taskID != (unsigned int) gp_current_task->tid) {
+	if (current->taskID != (unsigned int) memBlockOwner) {
 		return -1;
 	}
 	new = (free_node *) addr; //treat the start of header as start of free node
