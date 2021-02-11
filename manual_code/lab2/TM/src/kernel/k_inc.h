@@ -69,7 +69,7 @@ typedef struct tcb {
     U8          prio;   /**> Execution priority                         */
     U8          state;  /**> task state                                 */
     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
-    RTX_TASK_INFO *TcbInfo; /**> info struct added to TCB               */
+    U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
 } TCB;
 
 /*
