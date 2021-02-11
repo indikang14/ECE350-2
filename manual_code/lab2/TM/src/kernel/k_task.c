@@ -140,6 +140,7 @@ The memory map of the OS image may look like the following:
 TCB *scheduler(void)
 {
     task_t tid = gp_current_task->tid;
+    printf("current task tid to run: %d ",gp_current_task->tid );
     return &g_tcbs[(++tid)%g_num_active_tasks];
 
 }
@@ -182,24 +183,42 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     TCBhead 		= NULL;
     g_num_active_tasks++;
     gp_current_task = p_tcb;
+    TCB* oldTCB = p_tcb;
+    TCB* newTCB;
 
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
-    	p_tcb->next = &g_tcbs[i+1]; //join the linked list of TCBs LL only has active tasks
+    	printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
+    	printf("address of new TCB is: 0x%x \r\n ", newTCB);
 
+        newTCB = &g_tcbs[i+1];
+        printf("address of next pTcb is: 0x%x \r\n ", newTCB);
 
+        oldTCB->next = newTCB; //join the linked list of TCBs LL only has active tasks
 
-        TCB *p_tcb = &g_tcbs[i+1];
+        printf("address of next(next pTcb) is: 0x%x \r\n ", oldTCB -> next);
+        printf("address of head next is: 0x%x \r\n ", TCBhead -> next);
+
+        newTCB->next = NULL; //initialize next pointer  of current task
+        newTCB->TcbInfo = p_taskinfo; // point to TCB's taskinfo in TCB struct
 
         if(i + 1 == 1) {
-            	TCBhead =  p_tcb; // there was another task other than NULL, make that head
+        	printf("address of first non null task: 0x%x \r\n", newTCB );
+            	TCBhead =  newTCB; // there was another task other than NULL, make that head
+            	printf("address of head next is: 0x%x \r\n ", TCBhead -> next);
           }
 
-        if (k_tsk_create_new(p_taskinfo, p_tcb, i+1) == RTX_OK) {
+        if (k_tsk_create_new(newTCB->TcbInfo, newTCB , i+1) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
         	g_num_active_tasks++;
         }
+        printf("tid of current tcb is: %d \r\n", newTCB->tid);
+        printf("address of current pTcb is: 0x%x \r\n ", newTCB);
+        printf("address of previous pTcb is: 0x%x \r\n ", oldTCB);
         p_taskinfo++;
+        printf("address of current pTcb is: 0x%x \r\n ", newTCB);
+        oldTCB = newTCB; // end of loop current TCB becomes old TCB
+
     }
     return RTX_OK;
 }
@@ -235,8 +254,8 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
     //initialize the taskInfo params
     p_tcb ->tid = tid;
     p_tcb->state = READY;
-    p_taskinfo->prio = p_tcb->prio;
-    p_taskinfo->priv = 0;
+    p_taskinfo->prio = p_tcb->prio; // setting prio for initialization
+    p_taskinfo->priv = p_tcb->priv;
     p_taskinfo->tid = tid;
 
 
@@ -364,7 +383,7 @@ int k_tsk_run_new(void)
         gp_current_task = p_tcb_old;        // revert back to the old task
         return RTX_ERR;
     }
-
+    printf("address of current task: 0x%x \r\n",gp_current_task );
     // at this point, gp_current_task != NULL and p_tcb_old != NULL
     if (gp_current_task != p_tcb_old) {
         gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
@@ -398,42 +417,59 @@ int k_tsk_yield(void)
 
 int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size)
 {
+
+#ifdef DEBUG_0
+    printf("k_tsk_create: entering...\n\r");
+    printf("task = 0x%x, task_entry = 0x% /x, prio=%d, stack_size = %d\n\r", task, task_entry, prio, stack_size);
+#endif /* DEBUG_0 */
+
 	//initialize
 	//RTX_TASK_INFO* newTaskInfo;
 	TCB* newTaskBlock;
-	BOOL taskFound = 0;//flag to indicate TCB created
+	int taskFound = 0;//flag to indicate TCB created
 
 	TCB* traverse;
 
-	//houses all the non dormant and used TCBS
-	for(traverse = TCBhead; (traverse != NULL || taskFound!=0)  ; traverse = traverse->next ) {
+	//Linked List houses all the active TCBS
+	for(traverse = TCBhead; taskFound == 0  ; traverse = traverse->next ) {
 
 		printf("address of traverse 0x%x \r\n", traverse);
+		printf("traverse next Tid is: %d \r\n",traverse->next->tid );
+		printf("traverse Tid is: %d \r\n",traverse->tid );
 
-			//if you find a dormant or unused TCB in between two active TCBs...
-		if((traverse->next->tid - traverse->tid) > 1) {
+		//if you find an unused TCB at the end of the linked  list
+			if (traverse->next == NULL) {
+				printf("free space at end of list!");
+				*task = traverse->tid +1;
+				printf("task(tid): %d", *task);
+				newTaskBlock =  &g_tcbs[*task];
+				printf("address of new TCB is: 0x%x \r\n ", newTaskBlock);
+				traverse->next = newTaskBlock;
+				newTaskBlock->next = NULL;
+				taskFound = 1;
 
-			task = traverse->tid +1;
-			newTaskBlock = &g_tcbs[task];
-			newTaskBlock->next = traverse->next;
-			traverse->next = newTaskBlock;
-			taskFound = 1;
-		}
-			//if you find an unused TCB at the end of the linked  list
-		else if (traverse->next == NULL) {
-			*task = traverse->tid +1;
-			newTaskBlock =  &g_tcbs[task];
-			traverse->next = newTaskBlock;
-			taskFound = 1;
+			}
 
-		}
+		//if you find a dormant or unused TCB in between two active TCBs...
+			else if((traverse->next->tid - traverse->tid) > 1) {
+				printf("there is space between two TCBs!");
+
+				*task =   traverse->tid +1;
+				printf("task(tid): %d", *task);
+				newTaskBlock = &g_tcbs[*task];
+				printf("address of new TCB is: 0x%x \r\n ", newTaskBlock);
+				newTaskBlock->next = traverse->next;
+				traverse->next = newTaskBlock;
+				taskFound = 1;
+			}
+
 	}
 
 // initialize TCB structure
 	//newTaskBlock->prio = prio;
 	//newTaskBlock->state = READY;
 	newTaskBlock->priv = 0;
-	newTaskBlock->tid = (U8) task;
+	newTaskBlock->tid = (U8) *task;
 	newTaskBlock->TcbInfo->tid = *task;
 
 	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) != RTX_OK) {
@@ -442,10 +478,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 
 
 
-#ifdef DEBUG_0
-    printf("k_tsk_create: entering...\n\r");
-    printf("task = 0x%x, task_entry = 0x% /x, prio=%d, stack_size = %d\n\r", task, task_entry, prio, stack_size);
-#endif /* DEBUG_0 */
+
     return RTX_OK;
 
 }
