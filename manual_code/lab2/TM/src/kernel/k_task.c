@@ -432,11 +432,14 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
 
     ///////sp = g_k_stacks[tid] + (KERN_STACK_SIZE >> 2) ;
     sp = k_alloc_k_stack(tid);
+    //set current kernel stack pointer to same address as base high address of kernel
 
     // 8B stack alignment adjustment
     if ((U32)sp & 0x04) {   // if sp not 8B aligned, then it must be 4B aligned
         sp--;               // adjust it to 8B aligned
     }
+    p_taskinfo->k_sp = (U32) sp;
+    p_taskinfo->k_stack_hi = (U32) sp;
 
     /*-------------------------------------------------------------------
      *  Step2: create task's user/sys mode initial context on the kernel stack.
@@ -463,6 +466,103 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
         //*** allocate user stack from the user space, not implemented yet ***//
         //********************************************************************//
         *(--sp) = (U32) k_alloc_p_stack(p_taskinfo);
+        //allocating current stack pointer
+        p_taskinfo->u_sp = (U32) sp;
+        p_taskinfo->u_stack_hi = (U32) sp;
+
+        // uR12, uR11, ..., uR0
+        for ( int j = 0; j < 13; j++ ) {
+            *(--sp) = 0x0;
+        }
+    }
+
+
+    /*---------------------------------------------------------------
+     *  Step3: create task kernel initial context on kernel stack
+     *
+     *         14 registers listed in push order
+     *         <kLR, kR0-kR12>
+     * -------------------------------------------------------------*/
+    if ( p_taskinfo->priv == 0 ) {
+        // user thread LR: return to the SVC handler
+        *(--sp) = (U32) (&SVC_RESTORE);
+    } else {
+        // kernel thread LR: return to the entry point of the task
+        *(--sp) = (U32) (p_taskinfo->ptask);
+    }
+
+    // kernel stack R0 - R12, 13 registers
+    for ( int j = 0; j < 13; j++) {
+        *(--sp) = 0x0;
+    }
+
+    p_tcb->msp = sp;
+
+    return RTX_OK;
+}int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
+{
+    extern U32 SVC_RESTORE;
+    extern U32 K_RESTORE;
+
+    U32 *sp;
+
+    if (p_taskinfo == NULL || p_tcb == NULL)
+    {
+        return RTX_ERR;
+    }
+
+    //initialize the taskInfo params
+    p_tcb ->tid = tid;
+    p_tcb->state = READY;
+    p_taskinfo->prio = p_tcb->prio; // setting prio for initialization
+    p_taskinfo->priv = p_tcb->priv;
+    p_taskinfo->tid = tid;
+
+
+    /*---------------------------------------------------------------
+     *  Step1: allocate kernel stack for the task
+     *         stacks grows down, stack base is at the high address
+     * -------------------------------------------------------------*/
+
+    ///////sp = g_k_stacks[tid] + (KERN_STACK_SIZE >> 2) ;
+    sp = k_alloc_k_stack(tid);
+    //set current kernel stack pointer to same address as base high address of kernel
+
+    // 8B stack alignment adjustment
+    if ((U32)sp & 0x04) {   // if sp not 8B aligned, then it must be 4B aligned
+        sp--;               // adjust it to 8B aligned
+    }
+    p_taskinfo->k_sp = (U32) sp;
+    p_taskinfo->k_stack_hi = (U32) sp;
+
+    /*-------------------------------------------------------------------
+     *  Step2: create task's user/sys mode initial context on the kernel stack.
+     *         fabricate the stack so that the stack looks like that
+     *         task executed and entered kernel from the SVC handler
+     *         hence had the user/sys mode context saved on the kernel stack.
+     *         This fabrication allows the task to return
+     *         to SVC_Handler before its execution.
+     *
+     *         16 registers listed in push order
+     *         <xPSR, PC, uSP, uR12, uR11, ...., uR0>
+     * -------------------------------------------------------------*/
+
+    // if kernel task runs under SVC mode, then no need to create user context stack frame for SVC handler entering
+    // since we never enter from SVC handler in this case
+    // uSP: initial user stack
+    if ( p_taskinfo->priv == 0 ) { // unprivileged task
+        // xPSR: Initial Processor State
+        *(--sp) = INIT_CPSR_USER;
+        // PC contains the entry point of the user/privileged task
+        *(--sp) = (U32) (p_taskinfo->ptask);
+
+        //********************************************************************//
+        //*** allocate user stack from the user space, not implemented yet ***//
+        //********************************************************************//
+        *(--sp) = (U32) k_alloc_p_stack(p_taskinfo);
+        //allocating current stack pointer
+        p_taskinfo->u_sp = (U32) sp;
+        p_taskinfo->u_stack_hi = (U32) sp;
 
         // uR12, uR11, ..., uR0
         for ( int j = 0; j < 13; j++ ) {
@@ -589,22 +689,49 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
     printf("task = 0x%x, task_entry = 0x% /x, prio=%d, stack_size = %d\n\r", task, task_entry, prio, stack_size);
 #endif /* DEBUG_0 */
 
+    //some error checking...
+
+    if(g_num_active_tasks > MAX_TASKS) {
+    	return RTX_ERR;
+    }
+
+    if(stack_size < PROC_STACK_SIZE) {
+    	return RTX_ERR;
+
+    }
+
+    if(prio!= HIGH && prio!= LOW && prio!= LOWEST && prio!= MEDIUM) {
+    	return RTX_ERR;
+    }
+
+
 	//initialize
 	//RTX_TASK_INFO* newTaskInfo;
 	TCB* newTaskBlock;
 	int taskFound = 0;//flag to indicate TCB created
 
-	TCB* traverse;
+	TCB* traverse = TCBhead;
 
 	//Linked List houses all the active TCBS
-	for(traverse = TCBhead; taskFound == 0  ; traverse = traverse->next ) {
+	while(taskFound == 0  ) {
 
 		printf("address of traverse 0x%x \r\n", traverse);
 		printf("traverse next Tid is: %d \r\n",traverse->next->tid );
 		printf("traverse Tid is: %d \r\n",traverse->tid );
 
+		//if rtx_init is called with no num_tasks parameter
+
+			if(traverse == NULL ) {
+
+				*task = 1;
+				newTaskBlock =  &g_tcbs[*task];
+				TCBhead = newTaskBlock;
+				TCBhead->next = NULL;
+				taskFound = 1;
+			}
+
 		//if you find an unused TCB at the end of the linked  list
-			if (traverse->next == NULL) {
+			else if (traverse->next == NULL) {
 				printf("free space at end of list!");
 				*task = traverse->tid +1;
 				printf("task(tid): %d", *task);
@@ -629,20 +756,36 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 				taskFound = 1;
 			}
 
+			traverse = traverse -> next;
 	}
 
-// initialize TCB structure
-	//newTaskBlock->prio = prio;
-	//newTaskBlock->state = READY;
+	printf(" DID U GET HERE??? \r\n");
+
+
+	// initialize TCB structure
+	newTaskBlock->prio = prio;
+	newTaskBlock->state = READY;
 	newTaskBlock->priv = 0;
 	newTaskBlock->tid = (U8) *task;
 	newTaskBlock->TcbInfo->tid = *task;
 	newTaskBlock->TcbInfo->u_stack_size = stack_size;
+	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
+	newTaskBlock->TcbInfo->ptask = task_entry;
 
-	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) != RTX_OK) {
-		return RTX_ERR;
+	//increment number of active tasks
+	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {
+		g_num_active_tasks++;
 	}
 
+	//set global flags for scheduler and run new task
+
+	thread_changed_p = newTaskBlock; // if a thread has created, exits, and prio changes
+//	thread_changed_event = CREATED;
+
+	//call new task to run
+	 if (k_tsk_run_new() != RTX_OK) {
+		 return RTX_ERR;
+	 }
 
 
 
