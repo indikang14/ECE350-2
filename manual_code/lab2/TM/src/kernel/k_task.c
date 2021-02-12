@@ -737,7 +737,6 @@ void k_tsk_exit(void)
     prev->next = prev->next->next;
 
 
-    // still need to dealloc
     if (gp_current_task == NULL) {
 		return;
 	}
@@ -761,6 +760,8 @@ void k_tsk_exit(void)
     if (gp_current_task != p_tcb_old) {
     	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
         p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+	thread_changed_event = "EXITED";
+        thread_changed_p = p_tcb_old;
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
 
@@ -794,7 +795,9 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     if (gp_current_task->priv == 0 && traverse->priv == 1) {
       return RTX_ERR;
     }
-
+    
+    thread_changed_p = traverse;
+    thread_changed_event = "PRIORITY";
     traverse->prio = prio;
     return RTX_OK;
 }
@@ -815,26 +818,22 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
     if (traverse == NULL) {
       return RTX_ERR;
     }
-    /* The code fills the buffer with some fake task information.
-       You should fill the buffer with correct information    */
+	
     buffer->tid = traverse->tid;
     buffer->prio = traverse->prio;
     buffer->state = traverse->state;
     buffer->priv = traverse->priv;
-    // task entry ?
-    // buffer->ptask = traverse->ptask;
+    buffer->ptask = traverse->TcbInfo->ptask;
     buffer->k_sp = *g_k_stacks[task_id];
 
-    // stack size?
-    // buffer->k_stack_size =;
+    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
 
     if (traverse->prio == 0) {
       buffer->u_sp = NULL;
       buffer->u_stack_size = NULL;
     } else {
       buffer->u_sp = *g_p_stacks[task_id];
-      // stack size?
-      // buffer->u_stack_size = ;
+      buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
     }
 
     return RTX_OK;
