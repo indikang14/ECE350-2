@@ -657,25 +657,6 @@ void k_tsk_exit(void)
 #endif /* DEBUG_0 */
     TCB *p_tcb_old = NULL;
 
-    if (gp_current_task == NULL) {
-    	return;
-    }
-
-    p_tcb_old = gp_current_task;
-    gp_current_task = scheduler();
-
-    if ( gp_current_task == NULL  ) {
-    	gp_current_task = p_tcb_old;        // revert back to the old task
-    	return;
-    }
-
-    // at this point, gp_current_task != NULL and p_tcb_old != NULL
-    if (gp_current_task != p_tcb_old) {
-    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
-        p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
-        k_tsk_switch(p_tcb_old);            // switch stacks
-    }
-
     // remove from linked list
     if (TCBhead->tid == p_tcb_old->tid) {
     	TCBhead = TCBhead->next;
@@ -694,7 +675,35 @@ void k_tsk_exit(void)
     // found the thing
     prev->next = prev->next->next;
 
+
     // still need to dealloc
+    if (gp_current_task == NULL) {
+		return;
+	}
+
+    kernelOwnedMemory = 1;
+    //dealloc user stack; from stack High, move back by the stack size to get the original pointer returned from mem_alloc
+    k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
+    kernelOwnedMemory = 0;
+
+
+
+    p_tcb_old = gp_current_task;
+    gp_current_task = scheduler();
+
+    if ( gp_current_task == NULL  ) {
+    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	return;
+    }
+
+    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    if (gp_current_task != p_tcb_old) {
+    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+        p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+        k_tsk_switch(p_tcb_old);            // switch stacks
+    }
+
+
 
     return;
 }
