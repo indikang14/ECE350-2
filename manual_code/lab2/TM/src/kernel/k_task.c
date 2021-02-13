@@ -786,6 +786,7 @@ void k_tsk_exit(void)
     if (gp_current_task != p_tcb_old) {
     	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
         p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+        g_num_active_tasks--;				//number of active tasks decreases
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
 
@@ -808,14 +809,12 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     }
 
     // find task
-    int i = 0;
-    while (i<MAX_TASKS && g_tcbs[i].tid != task_id) {
-    	i++;
+    while (traverse != NULL && traverse->tid != task_id) {
+      traverse = traverse->next;
     }
-    if(g_tcbs[i].tid != task_id || traverse->tid == TID_NULL) {
-    	 return RTX_ERR;
+    if (traverse == NULL || traverse->tid == TID_NULL) {
+      return RTX_ERR;
     }
-    traverse = &g_tcbs[i];
 
     // check that the current task is has edit privledges
     if (gp_current_task->priv == 0 && traverse->priv == 1) {
@@ -841,33 +840,304 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
         return RTX_ERR;
     }
     TCB* traverse = TCBhead;
-    while (traverse != NULL || traverse->tid != task_id) {
+    while (traverse != NULL && traverse->tid != task_id) {// CHANGED
       traverse = traverse->next;
     }
     if (traverse == NULL) {
       return RTX_ERR;
     }
 	
-    int i = 0;
-    while (i<MAX_TASKS && g_tcbs[i].tid != task_id) {
-    	i++;
-    }
-    if(g_tcbs[i].tid != task_id) {
-    	 return RTX_ERR;
-    }
-    traverse = &g_tcbs[i];
-
-    buffer->tid = traverse->TcbInfo->tid;
-    buffer->prio = traverse->TcbInfo->prio;
-    buffer->priv = traverse->TcbInfo->priv;
-    buffer->state = traverse->TcbInfo->state;
-    /* not sure why these aren't working 
-    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
-    buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
-    buffer->k_sp = traverse->TcbInfo->k_sp;
-    buffer->u_sp = traverse->TcbInfo->u_sp;
+    buffer->tid = traverse->tid;
+    buffer->prio = traverse->prio;
+    buffer->state = traverse->state;
+    buffer->priv = traverse->priv;
     buffer->ptask = traverse->TcbInfo->ptask;
-    */
+    buffer->k_sp = traverse->TcbInfo->k_sp;
+    buffer->k_stack_hi = traverse->TcbInfo->k_stack_hi;
+
+    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
+
+    if (traverse->priv != 0) {
+       buffer->u_sp = NULL;
+       buffer->u_stack_hi = NULL;
+      buffer->u_stack_size = NULL;
+    } else {
+    	buffer->u_stack_hi = traverse->TcbInfo->u_stack_hi;
+      buffer->u_sp = traverse->TcbInfo->u_sp;
+      buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
+    }
+
+    return RTX_OK;
+}void k_tsk_exit(void)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_exit: entering...\n\r");
+#endif /* DEBUG_0 */
+    TCB *p_tcb_old = gp_current_task;
+
+    // remove from linked list
+    if (TCBhead->tid == p_tcb_old->tid) {
+    	TCBhead = TCBhead->next;
+//        return;
+    }
+
+    TCB* prev = TCBhead;
+    printf("address of head: 0x%x \r\n",TCBhead );
+    // find task
+    while (prev->next != NULL && prev->next->tid != p_tcb_old->tid ) {
+    	prev = prev->next;
+    }
+    //this means the ending task is at the end of the active task linked list
+    if (prev->next == NULL) {
+    	return;
+    }
+
+    // found the thing
+    prev->next = prev->next->next;
+
+
+    if (gp_current_task == NULL) {
+		return;
+	}
+
+    kernelOwnedMemory = 1;
+    //dealloc user stack; from stack High, move back by the stack size to get the original pointer returned from mem_alloc
+    k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
+    kernelOwnedMemory = 0;
+
+
+
+    p_tcb_old = gp_current_task;
+
+	thread_changed_event = "EXITED";
+    thread_changed_p = p_tcb_old;
+    gp_current_task = scheduler();
+
+    if ( gp_current_task == NULL  ) {
+    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	return;
+    }
+
+    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    if (gp_current_task != p_tcb_old) {
+    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+        p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+        g_num_active_tasks--;				//number of active tasks decreases
+        k_tsk_switch(p_tcb_old);            // switch stacks
+    }
+
+
+
+    return;
+}
+
+int k_tsk_set_prio(task_t task_id, U8 prio)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_set_prio: entering...\n\r");
+    printf("task_id = %d, prio = %d.\n\r", task_id, prio);
+#endif /* DEBUG_0 */
+    TCB* traverse = TCBhead;
+
+    // check valid prio
+    if (prio != HIGH && prio != MEDIUM && prio != LOW && prio != LOWEST ) {
+      return RTX_ERR;
+    }
+
+    // find task
+    while (traverse != NULL && traverse->tid != task_id) {
+      traverse = traverse->next;
+    }
+    if (traverse == NULL || traverse->tid == TID_NULL) {
+      return RTX_ERR;
+    }
+
+    // check that the current task is has edit privledges
+    if (gp_current_task->priv == 0 && traverse->priv == 1) {
+      return RTX_ERR;
+    }
+    
+    thread_changed_p = traverse;
+    thread_changed_event = "PRIORITY";
+
+    traverse->prio = prio;
+
+    k_tsk_run_new();
+    return RTX_OK;
+}
+
+int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_get: entering...\n\r");
+    printf("task_id = %d, buffer = 0x%x.\n\r", task_id, buffer);
+#endif /* DEBUG_0 */
+    if (buffer == NULL) {
+        return RTX_ERR;
+    }
+    TCB* traverse = TCBhead;
+    while (traverse != NULL && traverse->tid != task_id) {// CHANGED
+      traverse = traverse->next;
+    }
+    if (traverse == NULL) {
+      return RTX_ERR;
+    }
+	
+    buffer->tid = traverse->tid;
+    buffer->prio = traverse->prio;
+    buffer->state = traverse->state;
+    buffer->priv = traverse->priv;
+    buffer->ptask = traverse->TcbInfo->ptask;
+    buffer->k_sp = traverse->TcbInfo->k_sp;
+    buffer->k_stack_hi = traverse->TcbInfo->k_stack_hi;
+
+    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
+
+    if (traverse->priv != 0) {
+       buffer->u_sp = NULL;
+       buffer->u_stack_hi = NULL;
+      buffer->u_stack_size = NULL;
+    } else {
+    	buffer->u_stack_hi = traverse->TcbInfo->u_stack_hi;
+      buffer->u_sp = traverse->TcbInfo->u_sp;
+      buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
+    }
+
+    return RTX_OK;
+}void k_tsk_exit(void)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_exit: entering...\n\r");
+#endif /* DEBUG_0 */
+    TCB *p_tcb_old = gp_current_task;
+
+    // remove from linked list
+    if (TCBhead->tid == p_tcb_old->tid) {
+    	TCBhead = TCBhead->next;
+//        return;
+    }
+
+    TCB* prev = TCBhead;
+    printf("address of head: 0x%x \r\n",TCBhead );
+    // find task
+    while (prev->next != NULL && prev->next->tid != p_tcb_old->tid ) {
+    	prev = prev->next;
+    }
+    //this means the ending task is at the end of the active task linked list
+    if (prev->next == NULL) {
+    	return;
+    }
+
+    // found the thing
+    prev->next = prev->next->next;
+
+
+    if (gp_current_task == NULL) {
+		return;
+	}
+
+    kernelOwnedMemory = 1;
+    //dealloc user stack; from stack High, move back by the stack size to get the original pointer returned from mem_alloc
+    k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
+    kernelOwnedMemory = 0;
+
+
+
+    p_tcb_old = gp_current_task;
+
+	thread_changed_event = "EXITED";
+    thread_changed_p = p_tcb_old;
+    gp_current_task = scheduler();
+
+    if ( gp_current_task == NULL  ) {
+    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	return;
+    }
+
+    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    if (gp_current_task != p_tcb_old) {
+    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+        p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
+        g_num_active_tasks--;				//number of active tasks decreases
+        k_tsk_switch(p_tcb_old);            // switch stacks
+    }
+
+
+
+    return;
+}
+
+int k_tsk_set_prio(task_t task_id, U8 prio)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_set_prio: entering...\n\r");
+    printf("task_id = %d, prio = %d.\n\r", task_id, prio);
+#endif /* DEBUG_0 */
+    TCB* traverse = TCBhead;
+
+    // check valid prio
+    if (prio != HIGH && prio != MEDIUM && prio != LOW && prio != LOWEST ) {
+      return RTX_ERR;
+    }
+
+    // find task
+    while (traverse != NULL && traverse->tid != task_id) {
+      traverse = traverse->next;
+    }
+    if (traverse == NULL || traverse->tid == TID_NULL) {
+      return RTX_ERR;
+    }
+
+    // check that the current task is has edit privledges
+    if (gp_current_task->priv == 0 && traverse->priv == 1) {
+      return RTX_ERR;
+    }
+    
+    thread_changed_p = traverse;
+    thread_changed_event = "PRIORITY";
+
+    traverse->prio = prio;
+
+    k_tsk_run_new();
+    return RTX_OK;
+}
+
+int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
+{
+#ifdef DEBUG_0
+    printf("k_tsk_get: entering...\n\r");
+    printf("task_id = %d, buffer = 0x%x.\n\r", task_id, buffer);
+#endif /* DEBUG_0 */
+    if (buffer == NULL) {
+        return RTX_ERR;
+    }
+    TCB* traverse = TCBhead;
+    while (traverse != NULL && traverse->tid != task_id) {// CHANGED
+      traverse = traverse->next;
+    }
+    if (traverse == NULL) {
+      return RTX_ERR;
+    }
+	
+    buffer->tid = traverse->tid;
+    buffer->prio = traverse->prio;
+    buffer->state = traverse->state;
+    buffer->priv = traverse->priv;
+    buffer->ptask = traverse->TcbInfo->ptask;
+    buffer->k_sp = traverse->TcbInfo->k_sp;
+    buffer->k_stack_hi = traverse->TcbInfo->k_stack_hi;
+
+    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
+
+    if (traverse->priv != 0) {
+       buffer->u_sp = NULL;
+       buffer->u_stack_hi = NULL;
+      buffer->u_stack_size = NULL;
+    } else {
+    	buffer->u_stack_hi = traverse->TcbInfo->u_stack_hi;
+      buffer->u_sp = traverse->TcbInfo->u_sp;
+      buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
+    }
 
     return RTX_OK;
 }
