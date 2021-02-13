@@ -41,19 +41,34 @@
 #include "printf.h"
 
 
+void* ownedMemory;
+task_t *ownerTask;
 /**
  * @brief: a dummy task1
  */
 void task1(void)
 {
     task_t tid;
+    task_t tid3;
     RTX_TASK_INFO task_info;
     
     SER_PutStr ("task1: entering \n\r");
-    /* do something */
+
     tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
     tsk_get(tid, &task_info);
     tsk_set_prio(tid, LOWEST);
+
+    //create task for testing memory ownership
+    ownedMemory = NULL;
+    ownerTask = &tid3;
+    tsk_create(&tid3, &task3, HIGH, 0x200);  /*create a user task */
+    tsk_yield(); //should switch to task 3
+    if (mem_dealloc(ownedMemory) == -1) {
+    	SER_PutStr ("task1: SUCCESS - can't deallocate owned memory \n\r");
+    } else {
+    	SER_PutStr ("task1: ERROR - shouldn't be able to deallocate owned memory \n\r");
+    }
+
     /* terminating */
     tsk_exit();
 }
@@ -63,11 +78,27 @@ void task1(void)
  */
 void task2(void)
 {
-    SER_PutStr ("task2: entering \n\r");
+	SER_PutStr ("task2: entering \n\r");
     /* do something */
     /* terminating */
     tsk_exit();
 }
+
+void task3(void)
+{
+	SER_PutStr ("task2: entering \n\r");
+	ownedMemory = mem_alloc(sizeof(U8) * 32);
+	tsk_set_prio(*ownerTask, LOWEST);
+	tsk_yield();
+	if (mem_dealloc(ownedMemory) == 0) {
+		SER_PutStr ("task2: memory deallocated successfully \n\r");
+	} else {
+		SER_PutStr ("task2: failure deallocating owned memory \n\r");
+	}
+	tsk_exit();
+}
+
+
 /*
  *===========================================================================
  *                             END OF FILE

@@ -231,7 +231,7 @@ void swap(TCB * p1, TCB * p2) {
 // removes a specific thread from the priority queue
 void remove( TCB * p ) {
 
-    p->prio = PRIO_RT - 1; // make the node go to the top of the heap
+    p->prio = PRIO_RT; // make the node go to the top of the heap
 
     // Shift the node to the root
     moveUp( p->scheduler_index );
@@ -249,7 +249,7 @@ void changePriority( TCB * p ) {
         heapify( p->scheduler_index );
     }
 
-    heapify( p->scheduler_index );
+    //heapify( p->scheduler_index );
 }
 
 // deletes the max item and return
@@ -363,7 +363,6 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     gp_current_task = p_tcb;
     TCB* oldTCB = p_tcb;
     TCB* newTCB;
-
 
     // create the rest of the tasks
     p_taskinfo = task_info;
