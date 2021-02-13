@@ -391,7 +391,6 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     TCB* oldTCB = p_tcb;
     TCB* newTCB;
 
-
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
