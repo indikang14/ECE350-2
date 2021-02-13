@@ -187,6 +187,7 @@ TCB *scheduler(void)
 
         for ( int i=0; i<MAX_TASKS; i++) {
             if ( sizeof(g_tcbs[i]) == sizeof( TCB ) && ( g_tcbs[i].state == READY || g_tcbs[i].state == RUNNING ) ) { // schedule her up
+            	printf("address of gtcb task: 0x%0x and priority is: %d \r\n",&g_tcbs[i], (TCB *)(&g_tcbs[i])->prio );
                 enqueue( &g_tcbs[i] );
             }
         }
@@ -382,11 +383,12 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         printf("address of head next is: 0x%x \r\n ", TCBhead -> next);
 
         newTCB->next = NULL; //initialize next pointer  of current task
+        newTCB->TcbInfo = p_taskinfo;
         newTCB->tid = i+1;
-        newTCB->priv = 1;
         newTCB->state = READY;
-        newTCB->prio = LOWEST;
-        newTCB->TcbInfo = p_taskinfo; // point to TCB's taskinfo in TCB struct
+        newTCB->priv = newTCB->TcbInfo->priv;
+        newTCB->prio = newTCB->TcbInfo->prio;
+
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
         	g_num_active_tasks++;
@@ -395,12 +397,20 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         printf("address of current pTcb is: 0x%x \r\n ", newTCB);
         printf("address of previous pTcb is: 0x%x \r\n ", oldTCB);
         p_taskinfo++;
-        printf("address of current pTcb is: 0x%x \r\n ", newTCB);
         oldTCB = newTCB; // end of loop current TCB becomes old TCB
 
     }
 
-    scheduler();
+    oldTCB = TCBhead;
+
+    while(oldTCB!= NULL) {
+    	printf("PRINTING LIST OF TASKS CURRENTLY IN GTCBS:  \r\n");
+    	printf("address of task: 0x%x and task prio is: %d \r\n", oldTCB, oldTCB->prio);
+    	oldTCB = oldTCB->next;
+
+    }
+
+    //scheduler();
     return RTX_OK;
 }
 /**************************************************************************//**
