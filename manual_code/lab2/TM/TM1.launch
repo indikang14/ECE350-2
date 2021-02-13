@@ -1,29 +1,29 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="com.arm.debugger.launcher2">
     <mapAttribute key="AverageDurationTracker">
-        <mapEntry key="*Fetching Data Model" value="1025337"/>
-        <mapEntry key="*list global low level symbols" value="8182882"/>
-        <mapEntry key="AddEventObserver" value="3054012"/>
-        <mapEntry key="compute execution mode" value="776584"/>
-        <mapEntry key="continue" value="15064275"/>
+        <mapEntry key="*Fetching Data Model" value="948285"/>
+        <mapEntry key="*list global low level symbols" value="4831655"/>
+        <mapEntry key="AddEventObserver" value="5305853"/>
+        <mapEntry key="compute execution mode" value="498445"/>
+        <mapEntry key="continue" value="14420393"/>
         <mapEntry key="finish" value="4713493300"/>
-        <mapEntry key="get capabilities" value="174062"/>
-        <mapEntry key="get execution addresss" value="360991"/>
-        <mapEntry key="get source lines" value="294637"/>
-        <mapEntry key="initialize command help" value="58186000"/>
+        <mapEntry key="get capabilities" value="158590"/>
+        <mapEntry key="get execution addresss" value="491849"/>
+        <mapEntry key="get source lines" value="397441"/>
+        <mapEntry key="initialize command help" value="58894525"/>
         <mapEntry key="interrupt" value="14495387"/>
-        <mapEntry key="list breakpoint options" value="506926"/>
-        <mapEntry key="list breakpoints" value="955400"/>
-        <mapEntry key="list instruction sets" value="1958162"/>
-        <mapEntry key="list signals" value="946987"/>
-        <mapEntry key="list watchpoint options" value="2220012"/>
-        <mapEntry key="list watchpoints" value="963200"/>
-        <mapEntry key="loadfile" value="104356962"/>
-        <mapEntry key="set CWD" value="8165887"/>
-        <mapEntry key="set debug-from" value="1306425"/>
-        <mapEntry key="start" value="95167412"/>
+        <mapEntry key="list breakpoint options" value="296557"/>
+        <mapEntry key="list breakpoints" value="547650"/>
+        <mapEntry key="list instruction sets" value="910215"/>
+        <mapEntry key="list signals" value="2816421"/>
+        <mapEntry key="list watchpoint options" value="1529878"/>
+        <mapEntry key="list watchpoints" value="676775"/>
+        <mapEntry key="loadfile" value="112833540"/>
+        <mapEntry key="set CWD" value="5418196"/>
+        <mapEntry key="set debug-from" value="4995881"/>
+        <mapEntry key="start" value="92976428"/>
         <mapEntry key="step" value="10453670300"/>
-        <mapEntry key="waitForTargetToStop" value="29877387"/>
+        <mapEntry key="waitForTargetToStop" value="22123571"/>
     </mapAttribute>
     <intAttribute key="DEBUG_TAB..RESOURCES.COUNT" value="0"/>
     <intAttribute key="FILES.CONNECT_TO_GDB_SERVER.RESOURCES.COUNT" value="0"/>
@@ -33,9 +33,9 @@
     <stringAttribute key="FILES.DEBUG_RESIDENT_ANDROID.RESOURCES.0.VALUE" value=""/>
     <intAttribute key="FILES.DEBUG_RESIDENT_ANDROID.RESOURCES.COUNT" value="1"/>
     <listAttribute key="FILES.DEBUG_RESIDENT_APP"/>
-    <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.0.TYPE" value="TARGET_WORKING_DIR"/>
+    <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.0.TYPE" value="APPLICATION_ON_TARGET"/>
     <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.0.VALUE" value=""/>
-    <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.1.TYPE" value="APPLICATION_ON_TARGET"/>
+    <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.1.TYPE" value="TARGET_WORKING_DIR"/>
     <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.1.VALUE" value=""/>
     <intAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.COUNT" value="2"/>
     <listAttribute key="FILES.DOWNLOAD_AND_DEBUG"/>

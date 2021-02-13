@@ -186,7 +186,7 @@ TCB *scheduler(void)
         global_q->size = 0;
 
         for ( int i=0; i<MAX_TASKS; i++) {
-            if ( sizeof(g_tcbs[i]) == sizeof( TCB ) && ( g_tcbs[i].state != READY || g_tcbs[i].state != RUNNING ) ) { // schedule her up
+            if ( sizeof(g_tcbs[i]) == sizeof( TCB ) && ( g_tcbs[i].state == READY || g_tcbs[i].state == RUNNING ) ) { // schedule her up
                 enqueue( &g_tcbs[i] );
             }
         }
@@ -363,6 +363,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     TCB* oldTCB = p_tcb;
     TCB* newTCB;
 
+
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
@@ -398,6 +399,8 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         oldTCB = newTCB; // end of loop current TCB becomes old TCB
 
     }
+
+    scheduler();
     return RTX_OK;
 }
 /**************************************************************************//**
@@ -759,6 +762,9 @@ void k_tsk_exit(void)
 
 
     p_tcb_old = gp_current_task;
+
+	thread_changed_event = "EXITED";
+    thread_changed_p = p_tcb_old;
     gp_current_task = scheduler();
 
     if ( gp_current_task == NULL  ) {
@@ -770,8 +776,6 @@ void k_tsk_exit(void)
     if (gp_current_task != p_tcb_old) {
     	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
         p_tcb_old->state = DORMANT;           // change state of the to-be-switched-out tcb
-	thread_changed_event = "EXITED";
-        thread_changed_p = p_tcb_old;
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
 
@@ -808,7 +812,10 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     
     thread_changed_p = traverse;
     thread_changed_event = "PRIORITY";
+
     traverse->prio = prio;
+
+    k_tsk_run_new();
     return RTX_OK;
 }
 
@@ -838,11 +845,11 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
 
     buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
 
-    if (traverse->prio == 0) {
-      buffer->u_sp = NULL;
+    if (traverse->priv != 0) {
+       buffer->u_sp = NULL;
       buffer->u_stack_size = NULL;
     } else {
-      buffer->u_sp = *g_p_stacks[task_id];
+      buffer->u_sp = traverse->TcbInfo->u_sp;
       buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
     }
 
