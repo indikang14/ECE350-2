@@ -161,6 +161,16 @@ priority_queue * global_q = NULL;
 //               EnQueue    DeQueue     Peek
 // Binary Heap	O(log n)	O(log n)	O(1)
 
+void clearEvent( void );
+void swap(TCB * p1, TCB * p2);
+void remove( TCB * p );
+void changePriority( TCB * p );
+TCB dequeue( void );
+int moveUp(int i);
+void enqueue( TCB * p );
+TCB * get_highest_priority( void );
+void heapify( int i );
+
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
 char * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
 int old_priority = NULL; // if a thread switched priority I need the previous state 
@@ -247,7 +257,7 @@ TCB dequeue() {
     TCB max = *global_q->heap[0];
 
     // replace the first item with the last item
-    swap( &global_q->heap[0], &global_q->heap[ global_q->size - 1] );
+    swap( global_q->heap[0], global_q->heap[ global_q->size - 1] );
     global_q->size--;
 
     // maintain the heap property by heapifying the
@@ -259,7 +269,7 @@ TCB dequeue() {
 // moves the element up to the top
 int moveUp(int i) {
     while (i != 0 && (*global_q->heap[(i - 1) / 2]).prio > (*global_q->heap[i]).prio) {
-        swap( &global_q->heap[(i - 1) / 2], &global_q->heap[i]);
+        swap( global_q->heap[(i - 1) / 2], global_q->heap[i]);
         i = (i - 1) / 2;
     }
 
@@ -286,7 +296,7 @@ void enqueue( TCB * p ) {
 
 // returns the minimum item of the heap
 TCB * get_highest_priority() {
-    return &global_q->heap[ 0 ];
+    return global_q->heap[ 0 ];
 }
 
 // we are going to maintain a heap for the tcbs
@@ -296,19 +306,19 @@ void heapify( int i )
     int l = 2 * i + 1;
     int r = 2 * i + 2;
     int n = global_q->size;
-    TCB * arr = global_q->heap;
+    TCB ** arr = global_q->heap;
 
     // If left child is larger than root
-    if (l < n && arr[l].prio < arr[smallest].prio)
+    if (l < n && arr[l]->prio < arr[smallest]->prio)
         smallest = l;
 
     // If right child is larger than largest so far
-    if (r < n && arr[r].prio < arr[smallest].prio)
+    if (r < n && arr[r]->prio < arr[smallest]->prio)
         smallest = r;
 
     // If largest is not root
     if (smallest != i) {
-        swap(&arr[i], &arr[smallest]);
+        swap(arr[i], arr[smallest]);
         heapify( smallest );
     }
 }
