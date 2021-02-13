@@ -808,12 +808,14 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     }
 
     // find task
-    while (traverse != NULL || traverse->tid != task_id) {
-      traverse = traverse->next;
+    int i = 0;
+    while (i<MAX_TASKS && g_tcbs[i].tid != task_id) {
+    	i++;
     }
-    if (traverse == NULL || traverse->tid == TID_NULL) {
-      return RTX_ERR;
+    if(g_tcbs[i].tid != task_id || traverse->tid == TID_NULL) {
+    	 return RTX_ERR;
     }
+    traverse = &g_tcbs[i];
 
     // check that the current task is has edit privledges
     if (gp_current_task->priv == 0 && traverse->priv == 1) {
@@ -846,22 +848,26 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
       return RTX_ERR;
     }
 	
-    buffer->tid = traverse->tid;
-    buffer->prio = traverse->prio;
-    buffer->state = traverse->state;
-    buffer->priv = traverse->priv;
-    buffer->ptask = traverse->TcbInfo->ptask;
-    buffer->k_sp = *g_k_stacks[task_id];
-
-    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
-
-    if (traverse->priv != 0) {
-       buffer->u_sp = NULL;
-      buffer->u_stack_size = NULL;
-    } else {
-      buffer->u_sp = traverse->TcbInfo->u_sp;
-      buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
+    int i = 0;
+    while (i<MAX_TASKS && g_tcbs[i].tid != task_id) {
+    	i++;
     }
+    if(g_tcbs[i].tid != task_id) {
+    	 return RTX_ERR;
+    }
+    traverse = &g_tcbs[i];
+
+    buffer->tid = traverse->TcbInfo->tid;
+    buffer->prio = traverse->TcbInfo->prio;
+    buffer->priv = traverse->TcbInfo->priv;
+    buffer->state = traverse->TcbInfo->state;
+    /* not sure why these aren't working 
+    buffer->k_stack_size = traverse->TcbInfo->k_stack_size;
+    buffer->u_stack_size = traverse->TcbInfo->u_stack_size;
+    buffer->k_sp = traverse->TcbInfo->k_sp;
+    buffer->u_sp = traverse->TcbInfo->u_sp;
+    buffer->ptask = traverse->TcbInfo->ptask;
+    */
 
     return RTX_OK;
 }
