@@ -27,24 +27,50 @@
  */
 
 /**************************************************************************//**
- * @file        usr_task.h
- * @brief       Two user tasks header file
- *
+ * @file        k_rtx_init.c
+ * @brief       RTX System Initialization C file
+ *              l2
  * @version     V1.2021.01
  * @authors     Yiqing Huang
  * @date        2021 JAN
  *
+ * @details
+ * @note
+ *
  *****************************************************************************/
 
- 
-#ifndef USR_TASK_H_
-#define USR_TASK_H_
+#include "k_rtx_init.h"
+#include "Serial.h"
+#include "k_mem.h"
+#include "k_task.h"
 
-void task1(void);
-void task2(void);
-void task3(void);
+int k_rtx_init(RTX_TASK_INFO *task_info, int num_tasks)
+{
+    /* interrupts are already disabled when we enter here */
+    if ( k_mem_init() != RTX_OK) {
+        return RTX_ERR;
+    }
 
-#endif // ! USR_TASK_H_
+    if ( k_tsk_init(task_info, num_tasks) != RTX_OK ) {
+        return RTX_ERR;
+    }
+    
+    /* start the first task */
+    //return k_tsk_start();
+    return RTX_OK;
+}
+
+int k_rtx_init_rt(RTX_SYS_INFO *sys_info, RTX_TASK_INFO *task_info, int num_tasks)
+{
+    /* initialize the scheduler here */
+    k_rtx_init(task_info, num_tasks);
+    return RTX_OK;
+}
+
+int k_get_sys_info(RTX_SYS_INFO *buffer)
+{
+    return RTX_OK;
+}
 
 /*
  *===========================================================================
