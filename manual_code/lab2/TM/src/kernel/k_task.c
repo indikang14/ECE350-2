@@ -232,11 +232,13 @@ void swap(TCB * p1, TCB * p2) {
 	//tmp = heap[p1->scheduler_index];
     heap[p1->scheduler_index] = p2;
     heap[p2->scheduler_index] = p1;
+    printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
     printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
     printf("new p1: 0x%x new p2: 0x%x \r\n", heap[p1->scheduler_index] , heap[p2->scheduler_index]  );
 
+    int tmp = p1->scheduler_index;
     p1->scheduler_index = p2->scheduler_index;
-    p2->scheduler_index = p1->scheduler_index;
+    p2->scheduler_index = tmp;
 }
 
 // removes a specific thread from the priority queue
@@ -247,7 +249,7 @@ void remove( TCB * p ) {
     printf("remove index: %d \r\n", p->scheduler_index);
 
     // Shift the node to the root
-    moveUp( p->scheduler_index );
+    p->scheduler_index = moveUp( p->scheduler_index );
     printf("global queue size: %d /r/n", q_size );
 
     for(int i =0; i<q_size; i++){
@@ -279,6 +281,9 @@ TCB dequeue() {
     // replace the first item with the last item
     swap( heap[0], heap[ q_size - 1] );
     q_size--;
+    for(int i =0; i<q_size; i++){
+        	printf("element in queue: 0x%x and priority: %d and sched index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index);
+        }
 
     // maintain the heap property by heapifying the
     // first item
@@ -289,6 +294,7 @@ TCB dequeue() {
 // moves the element up to the top
 int moveUp(int i) {
     while (i != 0 && (*heap[(i - 1) / 2]).prio > (*heap[i]).prio) {
+    	printf("SWAPPED! \r\n");
         swap( heap[(i - 1) / 2], heap[i]);
         i = (i - 1) / 2;
     }
@@ -298,7 +304,7 @@ int moveUp(int i) {
 
 // add the thread to our heap at the appropriate position
 void enqueue( TCB * p ) {
-
+	printf("address of p: 0x%x \r\n", p);
     if ( q_size >= MAX_TASKS ) {
         printf("%s\n", "The heap is full. Cannot insert");
         return;
@@ -541,7 +547,7 @@ int k_tsk_create_new(RTX_TASK_INFO *p_taskinfo, TCB *p_tcb, task_t tid)
         *(--sp) = (U32) (p_taskinfo->ptask);
     }
 
-    // kernel stack R0 - R12, 13 registerss
+    // kernel stack R0 - R12, 13 registers
     for ( int j = 0; j < 13; j++) {
         *(--sp) = 0x0;
     }
@@ -746,6 +752,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	//set global flags for scheduler and run new task
 
 	thread_changed_p = newTaskBlock; // if a thread has created, exits, and prio changes
+	printf("address of created task: 0x%x \r\n",thread_changed_p );
 	thread_changed_event = "CREATED";
 
 	//call new task to run
@@ -791,17 +798,22 @@ void k_tsk_exit(void)
 		return;
 	}
 
-    kernelOwnedMemory = 1;
-    //dealloc user stack; from stack High, move back by the stack size to get the original pointer returned from mem_alloc
-    k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
-    kernelOwnedMemory = 0;
-
-
 
     p_tcb_old = gp_current_task;
 
+    if(gp_current_task->priv == 0) {
+
+    		kernelOwnedMemory = 1;
+           //dealloc user stack; from stack High, move back by the stack size to get the original pointer returned from mem_alloc
+            k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
+            kernelOwnedMemory = 0;
+
+    }
+
 	thread_changed_event = "EXITED";
     thread_changed_p = p_tcb_old;
+
+
 
     gp_current_task = scheduler();
 
@@ -853,9 +865,12 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     
     thread_changed_p = traverse;
     thread_changed_event = "PRIORITY";
+    printf("old priority: %d \r\n",  traverse->prio);
     old_priority = traverse->prio;
 
     traverse->prio = prio;
+    printf("new priority: %d \r\n",  traverse->prio);
+
 
     k_tsk_run_new();
     return RTX_OK;
