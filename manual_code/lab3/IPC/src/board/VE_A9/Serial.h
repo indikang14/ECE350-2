@@ -150,18 +150,17 @@ typedef struct {
 #define NULL 0
 /* ECE350 END */
 
-/*TODO: add n to ser_xxx and also delete ser_enable and ser_disable*/
-extern void SER_Init(int n);
-extern char SER_GetChar (int n);
-extern void SER_PutChar(int n, char c);
-extern int  SER_PutStr(int n, char *s);
 
-
-extern int Interrupt_Rx(void);
-extern int Rx_Data_Ready(void);
-extern char Rx_Read_Data(void);
+extern void SER_Init(void);
+extern void SER_Enable(void);
+extern void SER_Disable(void);
+extern char SER_GetChar (void);
+extern void SER_PutChar(char c);
+extern void SER_Set_baud_rate(uint32_t baud_rate);
+extern void interrupt_SER(void);
 
 /* ECE350 START */
+extern int SER_PutStr(char *s);
 extern void putc(void *p, char c);     /* call back function for printf, use uart */
 /* ECE350 END */
 #endif /* SERIAL_H_ */

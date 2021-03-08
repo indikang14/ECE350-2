@@ -41,19 +41,34 @@
 #include "printf.h"
 
 
+void* ownedMemory;
+task_t *ownerTask;
 /**
  * @brief: a dummy task1
  */
 void task1(void)
 {
     task_t tid;
+    task_t tid3;
     RTX_TASK_INFO task_info;
     
-    SER_PutStr (0,"task1: entering \n\r");
-    /* do something */
+    SER_PutStr ("task1: entering \n\r");
+
     tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
     tsk_get(tid, &task_info);
     tsk_set_prio(tid, LOWEST);
+
+    //create task for testing memory ownership
+    ownedMemory = NULL;
+    ownerTask = &tid3;
+    tsk_create(&tid3, &task3, HIGH, 0x200);  /*create a user task */
+    tsk_yield(); //should switch to task 3
+    if (mem_dealloc(ownedMemory) == -1) {
+    	SER_PutStr ("task1: SUCCESS - can't deallocate owned memory \n\r");
+    } else {
+    	SER_PutStr ("task1: ERROR - shouldn't be able to deallocate owned memory \n\r");
+    }
+
     /* terminating */
     tsk_exit();
 }
@@ -63,30 +78,27 @@ void task1(void)
  */
 void task2(void)
 {
-    SER_PutStr (0,"task2: entering \n\r");
+	SER_PutStr ("task2: entering \n\r");
     /* do something */
-    long int x = 0;
-    int ret_val = 10;
-    int i = 0;
-    int j = 0;
-    for (i = 1;;i++) {
-            char out_char = 'a' + i%10;
-            for (j = 0; j < 5; j++ ) {
-                SER_PutChar(0,out_char);
-            }
-            SER_PutStr(0,"\n\r");
-
-            for ( x = 0; x < 5000000; x++); // some artifical delay
-            if ( i%6 == 0 ) {
-                SER_PutStr(0,"usr_task2 before yielding cpu.\n\r");
-                ret_val = tsk_yield();
-                SER_PutStr(0,"usr_task2 after yielding cpu.\n\r");
-                printf("usr_task2: ret_val=%d\n\r", ret_val);
-            }
-        }
     /* terminating */
-    //tsk_exit();
+    tsk_exit();
 }
+
+void task3(void)
+{
+	SER_PutStr ("task2: entering \n\r");
+	ownedMemory = mem_alloc(sizeof(U8) * 32);
+	tsk_set_prio(*ownerTask, LOWEST);
+	tsk_yield();
+	if (mem_dealloc(ownedMemory) == 0) {
+		SER_PutStr ("task2: memory deallocated successfully \n\r");
+	} else {
+		SER_PutStr ("task2: failure deallocating owned memory \n\r");
+	}
+	tsk_exit();
+}
+
+
 /*
  *===========================================================================
  *                             END OF FILE
