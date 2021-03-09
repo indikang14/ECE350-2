@@ -11,10 +11,177 @@
 #include "printf.h"
 #endif /* ! DEBUG_0 */
 
+int cq_isEmpty(CQ* circq) {
+    //returns 1 = true, 0 = false
+    return (circq->head == NULL);
+}
+
+mbx_metamsg* getMetaMessage(U8* mm_p, CQ *circq) {
+    if (mm_p == NULL) return NULL;
+    //if the location of the pointer is too close to the end of the mailbox memory block, need special handling
+    // specifically, within sizeof(mbx_metamsg) to edge
+    U8 *start = circq->memblock_p;
+    U8 *end = start + circq->size;
+    U32 length;
+
+    mbx_metamsg *ret;
+    U8 *temp = mm_p;
+    if (mm_p + sizeof(mbx_metamsg) > end) {
+        //not enough bytes to get message metadata + header; have to go byte by byte to build the mbx_metamessage not including data
+    	kernelOwnedMemory = 1;
+    	U8 *meta_header = k_mem_alloc(sizeof(mbx_metamsg));
+    	kernelOwnedMemory = 0;
+        U8 *readaddr;
+        for (int i = 0; i < sizeof(mbx_metamsg); i++) {
+            readaddr = temp + i;
+            readaddr = (readaddr >= circq->memblock_p + circq->size ? circq->memblock_p + ((U64)readaddr % (U64)(circq->memblock_p + circq->size)) : readaddr);
+            meta_header[i] = *readaddr;
+        }
+        //meta_header has everything but not the data
+        length = ((mbx_metamsg *)meta_header)->msg.header.length;
+        kernelOwnedMemory = 1;
+        ret = k_mem_alloc(sizeof(mbx_metamsg) + length - sizeof(RTX_MSG_HDR));
+        kernelOwnedMemory = 0;
+        if (ret == NULL) return NULL;
+        mbx_message *msg_p = (mbx_message *) &(ret->msg);
+        RTX_MSG_HDR *hdr_p = (RTX_MSG_HDR *) &(msg_p->header);
+        ret->senderTID = ((mbx_metamsg *)meta_header)->senderTID;
+        hdr_p->length = length;
+        hdr_p->type = ((mbx_metamsg *)meta_header)->msg.header.type;
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(meta_header);
+        kernelOwnedMemory = 0;
+    } else {
+        //can get mbx_metamessage, not including data
+        mbx_metamsg tempmm = *((mbx_metamsg *) mm_p);
+        length = tempmm.msg.header.length;
+        kernelOwnedMemory = 1;
+        ret = k_mem_alloc(sizeof(mbx_metamsg) + length - sizeof(RTX_MSG_HDR));
+        kernelOwnedMemory = 0;
+        if (ret == NULL) return NULL;
+        mbx_message *msg_p = (mbx_message *) &(ret->msg);
+        RTX_MSG_HDR *hdr_p = (RTX_MSG_HDR *) &(msg_p->header);
+        ret->senderTID = tempmm.senderTID;
+        hdr_p->length = length;
+        hdr_p->type = tempmm.msg.header.type;
+    }
+    //last thing to get is data, which might wrap around to start of array
+    temp = mm_p + sizeof(mbx_metamsg);
+    for (int i = 0; i < length - sizeof(RTX_MSG_HDR); i++) {
+        U8 *readaddr = temp + i;
+        readaddr = (readaddr >= circq->memblock_p + circq->size ? circq->memblock_p + ((U64)readaddr % (U64)(circq->memblock_p + circq->size)) : readaddr);
+        ret->msg.data[i] = *readaddr;
+    }
+    return ret; //after calling this function, need to free memory.
+}
+
+int cq_enqueue(mbx_metamsg *metamsg, CQ *receiver) {
+    if (receiver->memblock_p == NULL) return -1; //mailbox not created
+    //error if not enough space
+    U64 bytesrequired = sizeof(mbx_metamsg) + metamsg->msg.header.length - sizeof(RTX_MSG_HDR);
+    printf("enqueue -- bytes required: %lu\n", bytesrequired);
+    if (bytesrequired > receiver->remainingSize) return -1; //not enough space in mailbox for new message
+    if (!cq_isEmpty(receiver)) {
+        //get tail, add bytes corresponding to size of tail metadata + message
+        mbx_metamsg *tail = getMetaMessage((U8 *) receiver->tail, receiver);
+        U8 *temp = (U8 *) receiver->tail + sizeof(mbx_metamsg) + tail->msg.header.length - sizeof(RTX_MSG_HDR);
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(tail);
+        kernelOwnedMemory = 0;
+        //wrap back if necessary
+        temp = (temp >= receiver->memblock_p + receiver->size ? receiver->memblock_p + ((U64)temp % (U64)(receiver->memblock_p + receiver->size)) : temp);
+        //now temp is at address where we want to start copying bytes from message to mailbox
+        //ie temp is at the new tail for our cq
+
+        kernelOwnedMemory = 1;
+        mbx_metamsg *mm_p = k_mem_alloc(bytesrequired);
+        kernelOwnedMemory = 0;
+        if(mm_p == NULL) return -1;
+        mbx_message *msg_p = (mbx_message *) &(mm_p->msg);
+        RTX_MSG_HDR *hdr_p = (RTX_MSG_HDR *) &(msg_p->header);
+        mm_p->senderTID = metamsg->senderTID;
+        hdr_p->length = metamsg->msg.header.length;
+        hdr_p->type = metamsg->msg.header.type;
+        for (int i = 0; i < hdr_p->length - sizeof(RTX_MSG_HDR); i++) {
+            msg_p->data[i] = metamsg->msg.data[i];
+        }
+        U8 *mm_pu8 = (U8 *) mm_p;
+        //now we have the actual message in mm_p
+        //copy mm_p bytes individually to mailbox
+        for (int i = 0; i < bytesrequired; i++) {
+            U8 *writeaddr = temp + i;
+            //check for overflow on writeaddr, wrap back if necessary
+            writeaddr = (writeaddr >= receiver->memblock_p + receiver->size ? receiver->memblock_p + ((U64)writeaddr % (U64)(receiver->memblock_p + receiver->size)) : writeaddr);
+            *writeaddr = mm_pu8[i];
+        }
+        //update cq struct values
+        receiver->tail = (mbx_metamsg *) temp;
+        receiver->remainingSize -= bytesrequired;
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(mm_p);
+        kernelOwnedMemory = 0;
+    } else { //mailbox is empty, enough bytes to write the message in mailbox, so we can just use struct pointers to set that memory
+        mbx_metamsg *temp = (mbx_metamsg *) receiver->memblock_p;
+        mbx_message *msg_p = (mbx_message *) &(temp->msg);
+        RTX_MSG_HDR *hdr_p = (RTX_MSG_HDR *) &(msg_p->header);
+        temp->senderTID = metamsg->senderTID;
+        hdr_p->length = metamsg->msg.header.length;
+        hdr_p->type = metamsg->msg.header.type;
+        for (int i = 0; i < hdr_p->length - sizeof(RTX_MSG_HDR); i++) {
+            msg_p->data[i] = metamsg->msg.data[i];
+        }
+        //copied data, now update cq struct values
+        receiver->head = (mbx_metamsg *) temp;
+        receiver->tail = (mbx_metamsg *) temp;
+        receiver->remainingSize -= bytesrequired;
+    }
+    return 0;
+}
+
+mbx_metamsg* cq_dequeue() {
+    if (gp_current_task->mbx_cq.memblock_p == NULL) return NULL; //mailbox not created
+    //empty
+    if (cq_isEmpty(&(gp_current_task->mbx_cq))) return NULL;
+    printf("dequeueing...\n");
+    U8 *mm_pu8 = (U8 *) gp_current_task->mbx_cq.head;
+    //one element
+    if (gp_current_task->mbx_cq.head == gp_current_task->mbx_cq.tail) {
+        gp_current_task->mbx_cq.head = NULL;
+        gp_current_task->mbx_cq.tail = NULL;
+        gp_current_task->mbx_cq.remainingSize = gp_current_task->mbx_cq.size;
+        return getMetaMessage(mm_pu8, &(gp_current_task->mbx_cq));
+    } else { //more than one element in cq
+        //move front to next message in mailbox
+        mbx_metamsg *head = getMetaMessage((U8 *) gp_current_task->mbx_cq.head, &(gp_current_task->mbx_cq));
+        U64 bytesfreed = sizeof(mbx_metamsg) + head->msg.header.length - sizeof(RTX_MSG_HDR);
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(head);
+        kernelOwnedMemory = 0;
+        gp_current_task->mbx_cq.head = (void *) (mm_pu8 + bytesfreed);
+        gp_current_task->mbx_cq.remainingSize += bytesfreed;
+        return getMetaMessage(mm_pu8, &(gp_current_task->mbx_cq));
+    }
+}
+
 int k_mbx_create(size_t size) {
 #ifdef DEBUG_0
     printf("k_mbx_create: size = %d\r\n", size);
 #endif /* DEBUG_0 */
+
+    //check that size > min_size
+    if (size < MIN_MBX_SIZE) return -1;
+    //check that calling task doesn't already have a mailbox
+    if (gp_current_task->mbx_cq.memblock_p != NULL) return -1;
+
+    //allocate memory for mailbox
+    kernelOwnedMemory = 1;
+    U8 *p_mbx = k_mem_alloc(size);
+    kernelOwnedMemory = 0;
+    //check that allocation was successful
+    if (p_mbx == NULL) return -1;
+    gp_current_task->mbx_cq.memblock_p = p_mbx;
+    gp_current_task->mbx_cq.size = size;
+    gp_current_task->mbx_cq.remainingSize = size;
     return 0;
 }
 

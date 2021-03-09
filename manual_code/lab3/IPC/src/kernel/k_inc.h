@@ -58,6 +58,24 @@
  *===========================================================================
  */
 
+//CIRCULAR QUEUE MAILBOX
+typedef struct mbx_message {
+    RTX_MSG_HDR header;
+    U8 data[];
+} mbx_message;
+typedef struct mbx_metamsg {
+    U8 senderTID;
+    mbx_message msg;
+} mbx_metamsg;
+typedef struct circularQueue {
+    void *head; //start of head. void* because we can't trust that if it were a mbx_metamsg it wouldn't wrap around
+    void *tail; //start of tail. void* because we can't trust that if it were a mbx_metamsg it wouldn't wrap around
+    size_t      size;
+    size_t      remainingSize;
+    U8          *memblock_p; //first byte of the mailbox memblock
+} CQ;
+
+
 /**
  * @brief TCB data structure definition to support two kernel tasks.
  * @note  You will need to add more fields to this structure.
@@ -71,6 +89,7 @@ typedef struct tcb {
     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
     U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
     RTX_TASK_INFO *TcbInfo;
+    CQ mbx_cq;
 } TCB;
 
 /*
