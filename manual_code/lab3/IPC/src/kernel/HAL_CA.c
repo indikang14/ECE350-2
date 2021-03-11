@@ -229,20 +229,46 @@ EXIT_IRQ
 #pragma pop
 
 
+// modified to call the KCD task
 void SER_Interrupt(void)
 {
+  
+  char msg[5]; // static allocation of max message bytes
+  int msg_len = 0;
+  size_t hdr_size = sizeof(struct rtx_msg_hdr);
 
   if(Interrupt_Rx())			// check if interrupt type is Data Receive
   {
 	while(Rx_Data_Ready())	        // read while Data Ready is valid
 	{
 	      char c = Rx_Read_Data();	// would also clear the interrupt if last character is read
+
+              msg[msg_len] = c;
+              msg_len++;
+
 	      SER_PutChar(1, c);	// display back
 	}
   }
   else{                                 // unexpected interrupt type
         SER_PutStr(0, "Error interrupt type\n");
   }
+ 
+  // ask indraj if this is fine for both sending & running k_tsk_run_new
+  size_t tot_len = hdr_size + msg_len;
+  char buff[tot_len];
+
+
+  struct rtx_msg_hdr * hdr_ptr = (void *) &buff;    
+
+  hdr_ptr->type = KEY_IN;
+  hdr_ptr->length = tot_len; 
+
+  hdr_ptr += hdr_size;
+
+  for ( int i = 0;  i < msg_len; i++)
+        *(hdr_ptr + i) = msg[i];     
+
+  send_msg( TID_KCD, (void *)&buff );
   k_tsk_run_new();
 }
 
