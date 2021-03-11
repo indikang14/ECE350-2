@@ -291,6 +291,44 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
 #ifdef DEBUG_0
     printf("k_recv_msg: sender_tid  = 0x%x, buf=0x%x, len=%d\r\n", sender_tid, buf, len);
 #endif /* DEBUG_0 */
+    // if no mailbox created or null buffer
+    if (buf == NULL || gp_current_task->mbx_cq.memblock_p == NULL) return -1;
+
+    mbx_metamsg *metamsg = cq_dequeue();
+
+    if (metamsg == NULL) { // mailbox is empty
+        // change task state to BLK_MSG and run other task
+        p_tcb_old = gp_current_task;
+        p_tcb_old.state = BLK_MSG;
+
+        thread_changed_event = "EXITED";
+        thread_changed_p = p_tcb_old;
+        gp_current_task = scheduler();
+        gp_current_task->state = RUNNING
+        k_tsk_switch(p_tcb_old);
+        return -1;
+    }
+
+    if (metamsg->msg.header.length > len) {
+        // not big enough buffer
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(metamsg);
+        kernelOwnedMemory = 0;
+        return -1;
+    }
+
+    if (sender_tid != NULL) {
+        *sender_tid = metamsg->senderTID;
+    }
+
+    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
+        *buf[i] = metamsg->msq.data[i];
+    }
+
+    kernelOwnedMemory = 1;
+    k_mem_dealloc(metamsg);
+    kernelOwnedMemory = 0;
+
     return 0;
 }
 
