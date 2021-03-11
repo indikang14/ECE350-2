@@ -52,23 +52,13 @@ void task1(void)
     task_t tid3;
     RTX_TASK_INFO task_info;
     
-    SER_PutStr ("task1: entering \n\r");
 
+    SER_PutStr (0,"task1: entering \n\r");
+    /* do something */
+    mbx_create(0xFF);
     tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
     tsk_get(tid, &task_info);
-    tsk_set_prio(tid, LOWEST);
-
-    //create task for testing memory ownership
-    ownedMemory = NULL;
-    ownerTask = &tid3;
-    tsk_create(&tid3, &task3, HIGH, 0x200);  /*create a user task */
-    tsk_yield(); //should switch to task 3
-    if (mem_dealloc(ownedMemory) == -1) {
-    	SER_PutStr ("task1: SUCCESS - can't deallocate owned memory \n\r");
-    } else {
-    	SER_PutStr ("task1: ERROR - shouldn't be able to deallocate owned memory \n\r");
-    }
-
+    tsk_set_prio(tid, HIGH);
     /* terminating */
     tsk_exit();
 }
@@ -78,7 +68,19 @@ void task1(void)
  */
 void task2(void)
 {
-	SER_PutStr ("task2: entering \n\r");
+    SER_PutStr (0,"task2: entering \n\r");
+
+    mbx_create(0xFF);
+    size_t msg_hdr_size = sizeof(struct rtx_msg_hdr);
+    U8 *buf = mem_alloc(msg_hdr_size + 1);
+    struct rtx_msg_hdr *ptr = (void *)buf;
+    ptr->length = msg_hdr_size + 1;
+    ptr->type = DEFAULT;
+    buf+= msg_hdr_size;
+    (char*) buf = "Z";
+    send_msg(1, (void *) ptr);
+
+
     /* do something */
     /* terminating */
     tsk_exit();

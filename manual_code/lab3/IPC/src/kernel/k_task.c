@@ -397,10 +397,9 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     TCB* oldTCB = p_tcb;
     TCB* newTCB;
 
-
     // create the rest of the tasks
     p_taskinfo = task_info;
-    for ( int i = 1; i < num_tasks; i++ ) {
+    for ( int i = 0; i < num_tasks; i++ ) {
     	printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
     	printf("address of new TCB is: 0x%x \r\n ", newTCB);
 
@@ -434,21 +433,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
-
-    /**
-     * Create the KCD task
-     * Should be checked by Indraj
-    **/
-
-    TCB *p_tcb_kcd = &g_tcbs[15];
-    oldTCB->next = p_tcb_kcd;
-    p_tcb->prio     = PRIO_RT;
-    p_tcb->priv     = 0;
-    p_tcb->tid      = TID_KCD;
-    p_tcb->state    = READY;
-    p_tcb->next 	= NULL; 
-    g_num_active_tasks++;
-
+    //k_tsk_create();
 
     oldTCB = TCBhead;
 
