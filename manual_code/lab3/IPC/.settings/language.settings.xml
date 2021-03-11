@@ -11,7 +11,7 @@
             			
             <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
             			
-            <provider class="com.arm.eclipse.builder.armcc.discovery.ArmCompiler5LanguageSettingsProvider" console="false" env-hash="953658559943910801" id="com.arm.eclipse.builder.armcc.v5.langprovider" keep-relative-paths="false" name="Arm Compiler 5 Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} --list-macros &quot;${INPUTS}&quot;" prefer-non-shared="true">
+            <provider class="com.arm.eclipse.builder.armcc.discovery.ArmCompiler5LanguageSettingsProvider" console="false" env-hash="-451237519159410845" id="com.arm.eclipse.builder.armcc.v5.langprovider" keep-relative-paths="false" name="Arm Compiler 5 Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} --list-macros &quot;${INPUTS}&quot;" prefer-non-shared="true">
                 				
                 <language-scope id="com.arm.eclipse.builder.armcc.lang.c"/>
                 				
@@ -33,7 +33,7 @@
             			
             <provider-reference id="org.eclipse.cdt.managedbuilder.core.MBSLanguageSettingsProvider" ref="shared-provider"/>
             			
-            <provider class="com.arm.eclipse.builder.armcc.discovery.ArmCompiler5LanguageSettingsProvider" console="false" env-hash="950658729930086579" id="com.arm.eclipse.builder.armcc.v5.langprovider" keep-relative-paths="false" name="Arm Compiler 5 Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} --list-macros &quot;${INPUTS}&quot;" prefer-non-shared="true">
+            <provider class="com.arm.eclipse.builder.armcc.discovery.ArmCompiler5LanguageSettingsProvider" console="false" env-hash="-543091852091711743" id="com.arm.eclipse.builder.armcc.v5.langprovider" keep-relative-paths="false" name="Arm Compiler 5 Built-in Compiler Settings" parameter="${COMMAND} ${FLAGS} --list-macros &quot;${INPUTS}&quot;" prefer-non-shared="true">
                 				
                 <language-scope id="com.arm.eclipse.builder.armcc.lang.c"/>
                 				

@@ -433,6 +433,8 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
+    //k_tsk_create();
+
     oldTCB = TCBhead;
 
     while(oldTCB!= NULL) {

@@ -83,6 +83,8 @@ int main()
     mode = __get_mode();
     printf("mode = 0x%x\r\n", mode);
 
+    printf("TESTING DEBUGGER!");
+
     // System and Task set up by auto testing software
     if (ae_init(&sys_info, task_info, 3) != RTX_OK) {
     	printf("RTX INIT FAILED\r\n");

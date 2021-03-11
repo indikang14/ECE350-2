@@ -6,10 +6,28 @@
  */
 
 #include "k_msg.h"
+#include "k_task.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
 #endif /* ! DEBUG_0 */
+
+int isTcbActive(TCB* traverse , int searchTid) {
+
+	traverse = TCBhead;
+
+	while (traverse->tid != searchTid) {
+	    	if(traverse == NULL) {
+	    		return RTX_ERR;
+	    	}
+	    	traverse = traverse->next;
+	    }
+	printf("search tid is : %d \r\n", traverse->tid);
+
+	return RTX_OK;
+
+
+}
 
 int cq_isEmpty(CQ* circq) {
     //returns 1 = true, 0 = false
@@ -189,7 +207,84 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 #ifdef DEBUG_0
     printf("k_send_msg: receiver_tid = %d, buf=0x%x\r\n", receiver_tid, buf);
 #endif /* DEBUG_0 */
-    return 0;
+    //reading length and type of buf
+    RTX_MSG_HDR * readHdr = (RTX_MSG_HDR *) buf ;
+    //(RTX_MSG_HDR *) buf->length;
+
+    printf("size of message + header = 0x%x \r\n", readHdr->length);
+
+    //length of msg has to be a valid
+    if(buf == NULL || readHdr->length < MIN_MSG_SIZE){
+        	return RTX_ERR;
+        }
+
+    TCB* temp;
+    //check if receiver TCB is active
+    if(isTcbActive(temp, receiver_tid) != RTX_OK) {
+    	return RTX_ERR;
+    }
+
+    printf("temp tid and address is : %d and 0x%x \r\n", temp->tid, temp);
+
+    //check if receiving tcb has a mailbox (maybe a flag?)
+//    if(temp->mbx_cq == NULL) {
+//    	return RTX_ERR;
+//    }
+    //if receiving task state is blocked, unblock it and preempt the scheduler if prio is higher than current task
+    if(temp->state == BLK_MSG) {
+
+    	//thread_changed_p = temp;
+    	//thread_changed_event = "PRIORITY";
+
+    	TCB* p_tcb_old = gp_current_task;
+
+    	gp_current_task = scheduler();
+
+    	    printf("address of current task: 0x%x \r\n", gp_current_task);
+
+    	    if ( gp_current_task == NULL  ) {
+    	    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	    	//return;
+    	    }
+
+    	    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    	    if (gp_current_task != p_tcb_old) {
+    	    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+    	        p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
+    	        //g_num_active_tasks--;				//number of active tasks decreases
+    	        k_tsk_switch(p_tcb_old);            // switch stacks
+    	    }
+    	}
+
+    int sizeOfData =  (readHdr->length - sizeof(RTX_MSG_HDR) );
+
+    printf("size of just Data: %d", sizeOfData);
+
+    	mbx_metamsg *metamsg1 = k_mem_alloc(sizeof(mbx_metamsg) + sizeOfData);
+        mbx_message *msg1 = (mbx_message *) &(metamsg1->msg);
+        RTX_MSG_HDR *header1 = (RTX_MSG_HDR *) &(msg1->header);
+        header1->length = sizeof(RTX_MSG_HDR) + sizeOfData; //size of string
+        header1->type = readHdr->type;
+        (U8 *)buf += sizeof(RTX_MSG_HDR);
+        char * tempData = (char *)buf;
+
+
+        for (int i = 0; i < header1->length - sizeof(RTX_MSG_HDR); i++) {
+            msg1->data[i] = tempData[i];
+        }
+        metamsg1->senderTID = gp_current_task->tid;
+
+        //address of mailbox of the receiver
+        if (cq_enqueue(metamsg1, &(temp->mbx_cq)) != 0) {
+                k_mem_dealloc(metamsg1);
+                printf("Error in enqueue\n");
+                return RTX_ERR;
+            } else {
+            	k_mem_dealloc(metamsg1);
+                printf("enqueue successful\n");
+                return RTX_OK;
+            }
+
 }
 
 int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {

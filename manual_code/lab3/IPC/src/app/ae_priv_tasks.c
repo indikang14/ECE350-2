@@ -54,6 +54,8 @@ void priv_task1(void)
     int j = 0;
     long int x = 0;
     int ret_val = 10;
+    //create mailbox
+    //k_mbx_create(0xFF);
     
     while (1) {
         char out_char = 'A' + i%26;
@@ -66,6 +68,9 @@ void priv_task1(void)
         if ( (++i)%6 == 0 ) {
             SER_PutStr(0,"priv_task1 before yielding cpu.\n\r");
             ret_val = k_tsk_yield();
+
+            //adding testing
+            k_tsk_exit();
             SER_PutStr(0,"priv_task1 after yielding cpu.\n\r");
             printf("priv_task1: ret_val=%d\n\r", ret_val);
 #ifdef DEBUG_0
@@ -94,7 +99,7 @@ void priv_task2(void)
 
     k_tsk_create(&tid, &task1, LOW, 0x200);  /*create a user task */
     k_tsk_get(tid, &task_info);
-    k_tsk_set_prio(tid, LOWEST);
+    k_tsk_set_prio(tid, MEDIUM);
 
 
     for (i = 1;;i++) {

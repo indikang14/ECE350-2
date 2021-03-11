@@ -53,6 +53,7 @@
 
 extern TCB *gp_current_task;
 extern BOOL kernelOwnedMemory;
+extern TCB* TCBhead;
 
 /*
  *===========================================================================
