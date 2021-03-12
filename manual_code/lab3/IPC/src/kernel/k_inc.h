@@ -113,6 +113,11 @@ extern unsigned int Image$$ZI_DATA$$ZI$$Limit; 	// Linker defined symbol
 
 // task related globals are defined in k_task.c
 extern TCB *gp_current_task;    // always point to the current RUNNING task
+extern BOOL kernelOwnedMemory;
+extern TCB* TCBhead;
+extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
+extern char * thread_changed_event; // if a thread has created, exits, and prio changes
+extern int old_priority; // if a thread switched priority I need the previous state
 
 // TCBs are statically allocated inside the OS image
 extern TCB g_tcbs[MAX_TASKS];

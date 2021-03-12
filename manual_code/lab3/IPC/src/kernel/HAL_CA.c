@@ -44,6 +44,8 @@
 #include "interrupt.h"
 #include "Serial.h"
 #include "k_task.h"
+#include "k_msg.h"
+#include "rtx.h"
 
 #pragma push
 #pragma arm
@@ -266,7 +268,7 @@ void SER_Interrupt(void)
   hdr_ptr += hdr_size;
 
   for ( int i = 0;  i < msg_len; i++)
-        *(hdr_ptr + i) = msg[i];     
+        *(buff + i) = msg[i];
 
   send_msg( TID_KCD, (void *)&buff );
   k_tsk_run_new();

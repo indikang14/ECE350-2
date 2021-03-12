@@ -296,15 +296,17 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
 
     mbx_metamsg *metamsg = cq_dequeue();
 
+    TCB* p_tcb_old;
+
     if (metamsg == NULL) { // mailbox is empty
         // change task state to BLK_MSG and run other task
         p_tcb_old = gp_current_task;
-        p_tcb_old.state = BLK_MSG;
+        p_tcb_old->state = BLK_MSG;
 
         thread_changed_event = "EXITED";
         thread_changed_p = p_tcb_old;
         gp_current_task = scheduler();
-        gp_current_task->state = RUNNING
+        gp_current_task->state = RUNNING;
         k_tsk_switch(p_tcb_old);
         return -1;
     }
@@ -321,9 +323,9 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         *sender_tid = metamsg->senderTID;
     }
 
-    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
-        *buf[i] = metamsg->msq.data[i];
-    }
+//    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
+//        *buf[i] = metamsg->msg.data[i];
+//    }
 
     kernelOwnedMemory = 1;
     k_mem_dealloc(metamsg);

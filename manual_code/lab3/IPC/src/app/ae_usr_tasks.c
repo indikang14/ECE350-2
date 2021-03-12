@@ -88,14 +88,14 @@ void task2(void)
 
 void task3(void)
 {
-	SER_PutStr ("task2: entering \n\r");
+	SER_PutStr (0, "task2: entering \n\r");
 	ownedMemory = mem_alloc(sizeof(U8) * 32);
 	tsk_set_prio(*ownerTask, LOWEST);
 	tsk_yield();
 	if (mem_dealloc(ownedMemory) == 0) {
-		SER_PutStr ("task2: memory deallocated successfully \n\r");
+		SER_PutStr (1, "task2: memory deallocated successfully \n\r");
 	} else {
-		SER_PutStr ("task2: failure deallocating owned memory \n\r");
+		SER_PutStr (1, "task2: failure deallocating owned memory \n\r");
 	}
 	tsk_exit();
 }

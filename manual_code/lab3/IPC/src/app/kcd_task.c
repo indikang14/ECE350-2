@@ -1,4 +1,7 @@
 /* The KCD Task Template File */
+#include "Serial.h"
+#include "k_msg.h"
+#include "rtx.h"
 
 // there are 62 alphanumeric case sensitive commands which can be registered
 #define MAX_KEYS 62
@@ -13,17 +16,17 @@ struct item {
 };
 
 void display();
-struct item search( char key );
+struct item * search( char key );
 int insert( char key, task_t tid );
 int hashCode(char char_key);
 
-struct item hashTable[MAX_KEYS] = {};
+struct item hashTable[MAX_KEYS];
 int keys = 0;
 
 void display() {
 	
    for(int i = 0; i < MAX_KEYS; i++) {
-      if( hashTable[i] != NULL )
+      if( hashTable[i].key != NULL )
          printf(" (%d, %c)", hashTable[i].tid, hashTable[i].key);
       else
          printf(" ~~ ");
@@ -49,7 +52,7 @@ void display() {
 // }
 
 
-struct item search( char key ) {
+struct item * search( char key ) {
    
    int i = hashCode(key);
    int j = 0;
@@ -61,11 +64,11 @@ struct item search( char key ) {
       i %= MAX_KEYS;
 
       if ( j > MAX_KEYS ) {
-         return NULL;
+         return FALSE;
       }
    }  
    
-   return hashTable[i];   
+   return &hashTable[i];
 }
 
 // return 0 if failure, 1 if successful
@@ -83,7 +86,7 @@ int insert( char key, task_t tid ) {
    int i = hashCode(item.key);
 
    // move around to avoid collisions
-   while( hashTable[i] != NULL ) {
+   while( hashTable[i].key != NULL ) {
       ++i;
       i %= MAX_KEYS;
    }
@@ -178,7 +181,7 @@ void kcd_task(void)
                      struct item * res = search( *(str_buf + 1) );
 
                      // would be cool if I could have a check_tid_function from indraj
-                     if ( !res || !check_tid_active( res->tid ) ) {
+                     if ( !res || !isTcbActive( res->tid ) ) {
 
                         SER_PutStr(0, "Command cannot be processed");
                      
@@ -194,7 +197,7 @@ void kcd_task(void)
                         hdr_ptr += msg_hdr_size;
 
                         for ( int i = 0;  i < tot_chars_received; i++)
-                           *(hdr_ptr + i) = str_buf[i];     
+                           *(buff + i) = str_buf[i];
 
                         send_msg( res->tid, (void *)&buff );
 

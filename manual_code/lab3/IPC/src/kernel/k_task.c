@@ -67,7 +67,7 @@ TCB             *gp_current_task = NULL;	// the current RUNNING task
 TCB             g_tcbs[MAX_TASKS];			// an array of TCBs
 RTX_TASK_INFO   g_null_task_info;			// The null task info
 U32             g_num_active_tasks = 0;		// number of non-dormant tasks
-TCB 			*TCBhead;						//points to starting TCB not NULL
+TCB 			*TCBhead = NULL;						//points to starting TCB not NULL
 
 BOOL			kernelOwnedMemory = 0;
 
