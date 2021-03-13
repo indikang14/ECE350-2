@@ -421,6 +421,13 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         newTCB->state = READY;
         newTCB->priv = newTCB->TcbInfo->priv;
         newTCB->prio = newTCB->TcbInfo->prio;
+        CQ mbx_cq;
+        mbx_cq.head = NULL;
+        mbx_cq.tail = NULL;
+        mbx_cq.size = 0;
+        mbx_cq.remainingSize = 0;
+        mbx_cq.memblock_p = NULL;
+        newTCB->mbx_cq = mbx_cq;
 
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
@@ -745,6 +752,14 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->u_stack_size = stack_size;
 	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 	newTaskBlock->TcbInfo->ptask = task_entry;
+	//initializing mailbox
+	CQ mbx_cq;
+	        mbx_cq.head = NULL;
+	        mbx_cq.tail = NULL;
+	        mbx_cq.size = 0;
+	        mbx_cq.remainingSize = 0;
+	        mbx_cq.memblock_p = NULL;
+	        newTaskBlock->mbx_cq = mbx_cq;
 
 	//increment number of active tasks
 	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {
