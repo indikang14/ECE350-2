@@ -114,6 +114,10 @@ void ae_set_task_info(RTX_TASK_INFO *tasks, int num_tasks) {
     tasks[1].ptask = &priv_task2;
     tasks[2].ptask = &task2;
     tasks[2].priv = 0;
+
+    tasks[0].prio = LOWEST;
+    tasks[1].prio = MEDIUM;
+    tasks[2].prio = LOW;
     return;
 }
 

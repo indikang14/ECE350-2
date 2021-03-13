@@ -175,7 +175,8 @@ void heapify( int i );
 
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
 char * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
-int old_priority = NULL; // if a thread switched priority I need the previous state 
+int old_priority = NULL; // if a thread switched priority I need the previous state
+
 
 // note: scheduler is called when task is 
 TCB *scheduler(void)
@@ -420,6 +421,13 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         newTCB->state = READY;
         newTCB->priv = newTCB->TcbInfo->priv;
         newTCB->prio = newTCB->TcbInfo->prio;
+        CQ mbx_cq;
+        mbx_cq.head = NULL;
+        mbx_cq.tail = NULL;
+        mbx_cq.size = 0;
+        mbx_cq.remainingSize = 0;
+        mbx_cq.memblock_p = NULL;
+        newTCB->mbx_cq = mbx_cq;
 
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
@@ -600,6 +608,7 @@ K_RESTORE
  *****************************************************************************/
 int k_tsk_run_new(void)
 {
+
     TCB *p_tcb_old = NULL;
     
     if (gp_current_task == NULL) {
@@ -608,6 +617,7 @@ int k_tsk_run_new(void)
 
     p_tcb_old = gp_current_task;
     gp_current_task = scheduler();
+
     
     if ( gp_current_task == NULL  ) {
         gp_current_task = p_tcb_old;        // revert back to the old task
@@ -744,6 +754,14 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->u_stack_size = stack_size;
 	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 	newTaskBlock->TcbInfo->ptask = task_entry;
+	//initializing mailbox
+	CQ mbx_cq;
+	        mbx_cq.head = NULL;
+	        mbx_cq.tail = NULL;
+	        mbx_cq.size = 0;
+	        mbx_cq.remainingSize = 0;
+	        mbx_cq.memblock_p = NULL;
+	        newTaskBlock->mbx_cq = mbx_cq;
 
 	//increment number of active tasks
 	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {
@@ -871,7 +889,6 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
 
     traverse->prio = prio;
     printf("new priority: %d \r\n",  traverse->prio);
-
 
     k_tsk_run_new();
     return RTX_OK;

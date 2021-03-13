@@ -41,24 +41,35 @@
 #include "printf.h"
 
 
-void* ownedMemory;
-task_t *ownerTask;
 /**
  * @brief: a dummy task1
  */
 void task1(void)
 {
-    task_t tid;
-    task_t tid3;
+    //task_t tid;
     RTX_TASK_INFO task_info;
     
 
     SER_PutStr (0,"task1: entering \n\r");
     /* do something */
     mbx_create(0xFF);
-    tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
-    tsk_get(tid, &task_info);
-    tsk_set_prio(tid, HIGH);
+    //tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
+    //tsk_get(tid, &task_info);
+    tsk_get(1, &task_info);
+    tsk_set_prio(2, LOWEST);
+    tsk_set_prio(4, MEDIUM);
+    tsk_set_prio(3, HIGH);
+
+
+    //back from user2: check mailbox
+    U8 *buf = mem_alloc(9);
+    task_t senderTID;
+    recv_msg(&senderTID, buf, 9);
+    mem_dealloc(buf);
+
+
+
+    tsk_yield();
     /* terminating */
     tsk_exit();
 }
@@ -76,31 +87,37 @@ void task2(void)
     struct rtx_msg_hdr *ptr = (void *)buf;
     ptr->length = msg_hdr_size + 1;
     ptr->type = DEFAULT;
-    buf+= msg_hdr_size;
-    (char*) buf = "Z";
-    send_msg(1, (void *) ptr);
+    buf += msg_hdr_size;
+    *buf = (U8) 'Z';
+    send_msg(4, (void *) ptr);
+
+    tsk_set_prio(3, LOW);//user1 runs next
+
 
 
     /* do something */
+    long int x = 0;
+    int ret_val = 10;
+    int i = 0;
+    int j = 0;
+    for (i = 1;;i++) {
+            char out_char = 'a' + i%10;
+            for (j = 0; j < 5; j++ ) {
+                SER_PutChar(0,out_char);
+            }
+            SER_PutStr(0,"\n\r");
+
+            for ( x = 0; x < 5000000; x++); // some artifical delay
+            if ( i%6 == 0 ) {
+                SER_PutStr(0,"usr_task2 before yielding cpu.\n\r");
+                ret_val = tsk_yield();
+                SER_PutStr(0,"usr_task2 after yielding cpu.\n\r");
+                printf("usr_task2: ret_val=%d\n\r", ret_val);
+            }
+        }
     /* terminating */
-    tsk_exit();
+    //tsk_exit();
 }
-
-void task3(void)
-{
-	SER_PutStr (0, "task2: entering \n\r");
-	ownedMemory = mem_alloc(sizeof(U8) * 32);
-	tsk_set_prio(*ownerTask, LOWEST);
-	tsk_yield();
-	if (mem_dealloc(ownedMemory) == 0) {
-		SER_PutStr (1, "task2: memory deallocated successfully \n\r");
-	} else {
-		SER_PutStr (1, "task2: failure deallocating owned memory \n\r");
-	}
-	tsk_exit();
-}
-
-
 /*
  *===========================================================================
  *                             END OF FILE

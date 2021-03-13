@@ -60,13 +60,13 @@ void priv_task1(void)
     while (1) {
         char out_char = 'A' + i%26;
         for (j = 0; j < 5; j++ ) {
-            SER_PutChar(1,out_char);
+            SER_PutChar(0,out_char);
         }
-        SER_PutStr(1, "\n\r");
+        SER_PutStr(0,"\n\r");
         
         for ( x = 0; x < DELAY; x++); // some artificial delay
         if ( (++i)%6 == 0 ) {
-            SER_PutStr(1, "priv_task1 before yielding cpu.\n\r");
+            SER_PutStr(0,"priv_task1 before yielding cpu.\n\r");
             ret_val = k_tsk_yield();
 
             //adding testing
@@ -97,23 +97,23 @@ void priv_task2(void)
     RTX_TASK_INFO task_info;
     task_t tid;
 
-    k_tsk_create(&tid, &task1, LOW, 0x200);  /*create a user task */
+    k_tsk_create(&tid, &task1, HIGH, 0x200);  /*create a user task */
     k_tsk_get(tid, &task_info);
-    k_tsk_set_prio(tid, MEDIUM);
+    //k_tsk_set_prio(tid, MEDIUM);
 
 
     for (i = 1;;i++) {
         char out_char = '0' + i%10;
         for (j = 0; j < 5; j++ ) {
-            SER_PutChar(1, out_char);
+            SER_PutChar(0,out_char);
         }
-        SER_PutStr(1, "\n\r");
+        SER_PutStr(0,"\n\r");
         
         for ( x = 0; x < DELAY; x++); // some artifical delay
         if ( i%6 == 0 ) {
-            SER_PutStr(1, "priv_task2 before yielding cpu.\n\r");
+            SER_PutStr(0,"priv_task2 before yielding cpu.\n\r");
             ret_val = k_tsk_yield();
-            SER_PutStr(1, "priv_task2 after yielding cpu.\n\r");
+            SER_PutStr(0,"priv_task2 after yielding cpu.\n\r");
             printf("priv_task2: ret_val=%d\n\r", ret_val);
 #ifdef DEBUG_0
             //printf("priv_task2: ret_val=%d\n\r", ret_val);
