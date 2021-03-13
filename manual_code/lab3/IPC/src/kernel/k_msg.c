@@ -312,7 +312,7 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         return -1;
     }
 
-    if (metamsg->msg.header.length > len) {
+    if (metamsg->msg.header.length + sizeof(RTX_MSG_HDR) > len) {
         // not big enough buffer
         kernelOwnedMemory = 1;
         k_mem_dealloc(metamsg);
@@ -320,13 +320,20 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         return -1;
     }
 
+    RTX_MSG_HDR * header = (RTX_MSG_HDR *) buf ;
+    header->length = metamsg->msg.header.length;
+    header->type = metamsg->msg.header.type;
+
     if (sender_tid != NULL) {
         *sender_tid = metamsg->senderTID;
     }
 
-//    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
-//        *buf[i] = metamsg->msg.data[i];
-//    }
+    char * data = (U8 *) buf + sizeof(RTX_MSG_HDR);
+
+    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
+        data[i] = metamsg->msg.data[i];
+
+    }
 
     kernelOwnedMemory = 1;
     k_mem_dealloc(metamsg);
