@@ -1,7 +1,8 @@
 /* The KCD Task Template File */
-#include "Serial.h"
-#include "k_msg.h"
-#include "rtx.h"
+//#include "Serial.h"
+//#include "k_msg.h"
+//#include "rtx.h"
+#include "kcd_task.h"
 
 // there are 62 alphanumeric case sensitive commands which can be registered
 #define MAX_KEYS 62

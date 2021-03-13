@@ -52,6 +52,7 @@
 #include "Serial.h"
 #include "k_task.h"
 #include "k_rtx.h"
+#include "kcd_task.h"
 
 #ifdef DEBUG_0
 #include "printf.h"
@@ -441,7 +442,41 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
-    //k_tsk_create();
+    //initialize KCD task
+    if(oldTCB->next == NULL) {
+    	newTCB = &g_tcbs[TID_KCD];
+    	 newTCB->next = NULL; //initialize next pointer  of current task
+    	 newTCB->tid = TID_KCD;
+    	 oldTCB->next = newTCB;
+
+    	 RTX_TASK_INFO* kcdInfo;
+    	 kcdInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+    	 newTCB->TcbInfo = kcdInfo;
+    	 // initialize TCB structure
+    	 	newTCB->prio = HIGH;
+    	 	newTCB->state = READY;
+    	 	newTCB->priv = 0;
+    	 	newTCB->TcbInfo->state = READY;
+    	 	newTCB->TcbInfo->u_stack_size = KCD_MBX_SIZE;
+    	 	newTCB->TcbInfo->k_stack_size = KERN_STACK_SIZE;
+    	 	newTCB->TcbInfo->ptask = &kcd_task;
+    	 	//initializing mailbox
+    	 	CQ mbx_cq;
+    	 	        mbx_cq.head = NULL;
+    	 	        mbx_cq.tail = NULL;
+    	 	        mbx_cq.size = 0;
+    	 	        mbx_cq.remainingSize = 0;
+    	 	        mbx_cq.memblock_p = NULL;
+    	 	       newTCB->mbx_cq = mbx_cq;
+
+    	 	//increment number of active tasks
+    	 	if(k_tsk_create_new(newTCB->TcbInfo,newTCB, newTCB->tid ) == RTX_OK) {
+    	 		g_num_active_tasks++;
+    	 	}
+
+
+
+    }
 
     oldTCB = TCBhead;
 
