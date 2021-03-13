@@ -608,6 +608,7 @@ K_RESTORE
  *****************************************************************************/
 int k_tsk_run_new(void)
 {
+
     TCB *p_tcb_old = NULL;
     
     if (gp_current_task == NULL) {
@@ -616,6 +617,7 @@ int k_tsk_run_new(void)
 
     p_tcb_old = gp_current_task;
     gp_current_task = scheduler();
+
     
     if ( gp_current_task == NULL  ) {
         gp_current_task = p_tcb_old;        // revert back to the old task
@@ -887,7 +889,6 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
 
     traverse->prio = prio;
     printf("new priority: %d \r\n",  traverse->prio);
-
 
     k_tsk_run_new();
     return RTX_OK;

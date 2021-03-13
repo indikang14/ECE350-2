@@ -25,8 +25,21 @@ int isTcbActive(TCB* traverse , int searchTid) {
 	printf("search tid is : %d \r\n", traverse->tid);
 
 	return RTX_OK;
+}
 
+int getTCBByTID(TCB** traverse , int searchTid) {
 
+	*traverse = TCBhead;
+
+	while ((*traverse)->tid != searchTid) {
+	    	if(*traverse == NULL) {
+	    		return RTX_ERR;
+	    	}
+	    	*traverse = (*traverse)->next;
+	    }
+	printf("search tid is : %d \r\n", (*traverse)->tid);
+
+	return RTX_OK;
 }
 
 int cq_isEmpty(CQ* circq) {
@@ -207,6 +220,7 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 #ifdef DEBUG_0
     printf("k_send_msg: receiver_tid = %d, buf=0x%x\r\n", receiver_tid, buf);
 #endif /* DEBUG_0 */
+
     //reading length and type of buf
     RTX_MSG_HDR * readHdr = (RTX_MSG_HDR *) buf ;
     //(RTX_MSG_HDR *) buf->length;
@@ -220,7 +234,7 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 
     TCB* temp;
     //check if receiver TCB is active
-    if(isTcbActive(temp, receiver_tid) != RTX_OK) {
+    if(getTCBByTID(&temp, receiver_tid) != RTX_OK) {
     	return RTX_ERR;
     }
 
@@ -265,8 +279,8 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
         RTX_MSG_HDR *header1 = (RTX_MSG_HDR *) &(msg1->header);
         header1->length = sizeof(RTX_MSG_HDR) + sizeOfData; //size of string
         header1->type = readHdr->type;
-        (U8 *)buf += sizeof(RTX_MSG_HDR);
-        char * tempData = (char *)buf;
+        buf = (U8 *)buf + sizeof(RTX_MSG_HDR);
+        U8 *tempData = (U8 *)buf;
 
 
         for (int i = 0; i < header1->length - sizeof(RTX_MSG_HDR); i++) {

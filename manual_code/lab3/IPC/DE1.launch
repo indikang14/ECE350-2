@@ -1,31 +1,44 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <launchConfiguration type="com.arm.debugger.launcher2">
     <mapAttribute key="AverageDurationTracker">
-        <mapEntry key="*Fetching Data Model" value="183731"/>
-        <mapEntry key="*list global low level symbols" value="723583"/>
-        <mapEntry key="AddEventObserver" value="4770981"/>
-        <mapEntry key="break" value="23870225"/>
-        <mapEntry key="compute execution mode" value="297000"/>
-        <mapEntry key="continue" value="20916765"/>
-        <mapEntry key="get capabilities" value="234475"/>
-        <mapEntry key="get execution addresss" value="329682"/>
-        <mapEntry key="get source lines" value="278154"/>
-        <mapEntry key="initialize command help" value="42975175"/>
-        <mapEntry key="list breakpoint options" value="302806"/>
-        <mapEntry key="list breakpoints" value="1101718"/>
-        <mapEntry key="list instruction sets" value="127600"/>
-        <mapEntry key="list signals" value="8371193"/>
-        <mapEntry key="list watchpoint options" value="203431"/>
-        <mapEntry key="list watchpoints" value="514787"/>
-        <mapEntry key="loadfile" value="181900768"/>
-        <mapEntry key="remove" value="7981250"/>
-        <mapEntry key="set CWD" value="1922400"/>
-        <mapEntry key="set breakpoint properties" value="41056212"/>
-        <mapEntry key="set debug-from" value="907531"/>
-        <mapEntry key="source altera_target_check.py" value="283749887"/>
-        <mapEntry key="start" value="41606412"/>
-        <mapEntry key="toggleBreakpoint" value="12558731"/>
-        <mapEntry key="waitForTargetToStop" value="26681912"/>
+        <mapEntry key="*Fetching Data Model" value="406395"/>
+        <mapEntry key="*list global low level symbols" value="466238"/>
+        <mapEntry key="*loading values from target" value="6418950"/>
+        <mapEntry key="*updating registers" value="196898900"/>
+        <mapEntry key="*updating variables" value="847423"/>
+        <mapEntry key="AddEventObserver" value="3065153"/>
+        <mapEntry key="Evaluate" value="651476"/>
+        <mapEntry key="Retrieving globals list" value="3608321"/>
+        <mapEntry key="areCachesAvailable" value="436935"/>
+        <mapEntry key="break" value="11341837"/>
+        <mapEntry key="compute execution mode" value="555063"/>
+        <mapEntry key="continue" value="28572628"/>
+        <mapEntry key="disassemble" value="41037109"/>
+        <mapEntry key="evaluate address" value="597489"/>
+        <mapEntry key="get capabilities" value="456523"/>
+        <mapEntry key="get execution addresss" value="290909"/>
+        <mapEntry key="get source lines" value="335229"/>
+        <mapEntry key="getValidEncodings" value="302942"/>
+        <mapEntry key="initialize command help" value="56926917"/>
+        <mapEntry key="interrupt" value="8810659"/>
+        <mapEntry key="list breakpoint options" value="86578"/>
+        <mapEntry key="list breakpoints" value="1781435"/>
+        <mapEntry key="list instruction sets" value="180156"/>
+        <mapEntry key="list signals" value="7554797"/>
+        <mapEntry key="list watchpoint options" value="198172"/>
+        <mapEntry key="list watchpoints" value="283508"/>
+        <mapEntry key="loadfile" value="245826849"/>
+        <mapEntry key="remove" value="7996600"/>
+        <mapEntry key="set CWD" value="1419317"/>
+        <mapEntry key="set breakpoint properties" value="13961522"/>
+        <mapEntry key="set debug-from" value="582357"/>
+        <mapEntry key="source altera_target_check.py" value="334480814"/>
+        <mapEntry key="start" value="25113806"/>
+        <mapEntry key="step" value="25862454"/>
+        <mapEntry key="stepi" value="13916530"/>
+        <mapEntry key="synchronizing trace ranges" value="70400"/>
+        <mapEntry key="toggleBreakpoint" value="9461687"/>
+        <mapEntry key="waitForTargetToStop" value="29723807"/>
     </mapAttribute>
     <intAttribute key="DEBUG_TAB..RESOURCES.COUNT" value="0"/>
     <intAttribute key="FILES.CONNECT_TO_GDB_SERVER.RESOURCES.COUNT" value="0"/>
@@ -40,28 +53,34 @@
     <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.1.TYPE" value="APPLICATION_ON_TARGET"/>
     <stringAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.1.VALUE" value=""/>
     <intAttribute key="FILES.DEBUG_RESIDENT_APP.RESOURCES.COUNT" value="2"/>
-    <listAttribute key="FILES.DOWNLOAD_AND_DEBUG"/>
+    <listAttribute key="FILES.DOWNLOAD_AND_DEBUG">
+        <listEntry value="ON_DEMAND_LOAD"/>
+        <listEntry value="ALSO_LOAD_SYMBOLS"/>
+    </listAttribute>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.0.OPTION.ALSO_LOAD_SYMBOLS" value="true"/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.0.OPTION.ON_DEMAND_LOAD" value="true"/>
-    <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.0.TYPE" value="APP_ON_HOST_TO_DOWNLOAD"/>
+    <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.0.TYPE" value="TARGET_DOWNLOAD_DIR"/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.0.VALUE" value=""/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.1.TYPE" value="TARGET_WORKING_DIR"/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.1.VALUE" value=""/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.2.OPTION.ALSO_LOAD_SYMBOLS" value="true"/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.2.OPTION.ON_DEMAND_LOAD" value="true"/>
-    <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.2.TYPE" value="TARGET_DOWNLOAD_DIR"/>
+    <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.2.TYPE" value="APP_ON_HOST_TO_DOWNLOAD"/>
     <stringAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.2.VALUE" value=""/>
     <intAttribute key="FILES.DOWNLOAD_AND_DEBUG.RESOURCES.COUNT" value="3"/>
-    <listAttribute key="FILES.DOWNLOAD_DEBUG"/>
+    <listAttribute key="FILES.DOWNLOAD_DEBUG">
+        <listEntry value="ON_DEMAND_LOAD"/>
+        <listEntry value="ALSO_LOAD_SYMBOLS"/>
+    </listAttribute>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.0.OPTION.ALSO_LOAD_SYMBOLS" value="true"/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.0.OPTION.ON_DEMAND_LOAD" value="true"/>
-    <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.0.TYPE" value="APP_ON_HOST_TO_DOWNLOAD"/>
+    <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.0.TYPE" value="TARGET_DOWNLOAD_DIR"/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.0.VALUE" value=""/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.1.TYPE" value="TARGET_WORKING_DIR"/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.1.VALUE" value=""/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.2.OPTION.ALSO_LOAD_SYMBOLS" value="true"/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.2.OPTION.ON_DEMAND_LOAD" value="true"/>
-    <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.2.TYPE" value="TARGET_DOWNLOAD_DIR"/>
+    <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.2.TYPE" value="APP_ON_HOST_TO_DOWNLOAD"/>
     <stringAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.2.VALUE" value=""/>
     <intAttribute key="FILES.DOWNLOAD_DEBUG.RESOURCES.COUNT" value="3"/>
     <intAttribute key="FILES.DOWNLOAD_DEBUG_ANDROID.RESOURCES.COUNT" value="0"/>
@@ -95,16 +114,42 @@
     <stringAttribute key="FILES.SELECTED_DEBUG_OPEATION" value="ICE_DEBUG"/>
     <stringAttribute key="HOST_WORKING_DIR" value="${workspace_loc}"/>
     <booleanAttribute key="HOST_WORKING_DIR_USE_DEFAULT" value="true"/>
+    <booleanAttribute key="InstructionStepping" value="true"/>
     <booleanAttribute key="KEY_COMMANDS_AFTER_CONNECT" value="false"/>
     <stringAttribute key="KEY_COMMANDS_AFTER_CONNECT_TEXT" value=""/>
     <booleanAttribute key="KEY_COMMANDS_AS_CONNECT" value="false"/>
     <booleanAttribute key="RSE_USE_HOSTNAME" value="true"/>
     <stringAttribute key="TCP_DISABLE_EXTENDED_MODE" value="true"/>
     <booleanAttribute key="TCP_KILL_ON_EXIT" value="false"/>
+    <listAttribute key="TREE_NODE_PROPERTIES:debugger.view.VariableTreeView">
+        <listEntry value="NODE CACHE VERSION 1"/>
+        <listEntry value="LOCALS:Locals:VALUE:N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c::k_send_msg::tempData"/>
+        <listEntry value="1"/>
+        <listEntry value="element formatter"/>
+        <listEntry value="Character"/>
+        <listEntry value="LOCALS:Locals:VALUE:N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c::k_send_msg::metamsg1:VALUE:N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c::k_send_msg::metamsg1-&gt;msg:VALUE:N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c::k_send_msg::metamsg1-&gt;msg.data"/>
+        <listEntry value="1"/>
+        <listEntry value="element formatter"/>
+        <listEntry value="Character"/>
+    </listAttribute>
     <booleanAttribute key="VFS_ENABLED" value="true"/>
     <stringAttribute key="VFS_LOCAL_DIR" value="${workspace_loc}"/>
     <stringAttribute key="VFS_REMOTE_MOUNT" value="/writeable"/>
-    <stringAttribute key="breakpoints" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;breakpoints order=&quot;ALPHA&quot;&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x0010171C&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;436&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x0010171C&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;436&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001015FC&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001015FC&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;1&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101600&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;2&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101710&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;3&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101714&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot; function=&quot;k_tsk_init&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001021AC&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/main_svc_cw.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\main_svc_cw.c&quot; line=&quot;97&quot; function=&quot;main&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001021AC&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/main_svc_cw.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\main_svc_cw.c&quot; line=&quot;97&quot; function=&quot;main&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&lt;/breakpoints&gt;&#10;"/>
+    <stringAttribute key="breakpoints" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;breakpoints order=&quot;ALPHA&quot;&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;436&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;436&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/k_task.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\k_task.c&quot; line=&quot;402&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/main_svc_cw.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\main_svc_cw.c&quot; line=&quot;97&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; debugFile=&quot;N:/ECE350/labgithub/ECE350/manual_code/lab3/IPC/src/kernel/main_svc_cw.c&quot; hostFile=&quot;N:\ECE350\labgithub\ECE350\manual_code\lab3\IPC\src\kernel\main_svc_cw.c&quot; line=&quot;97&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101410&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;224&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001013AC&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;241&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00100C5C&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;20&quot; function=&quot;isTcbActive&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00100B90&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;20&quot; function=&quot;isTcbActive&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00100C6C&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;23&quot; function=&quot;isTcbActive&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00100BA0&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;23&quot; function=&quot;isTcbActive&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00103B78&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/app/ae_usr_tasks.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\app\ae_usr_tasks.c&quot; line=&quot;72&quot; function=&quot;task1&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00103B70&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/app/ae_usr_tasks.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\app\ae_usr_tasks.c&quot; line=&quot;72&quot; function=&quot;task1&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001012D0&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;216&quot; function=&quot;k_mbx_create&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101334&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;216&quot; function=&quot;k_mbx_create&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00103BEC&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/app/ae_usr_tasks.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\app\ae_usr_tasks.c&quot; line=&quot;80&quot; function=&quot;task2&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00103BD4&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/app/ae_usr_tasks.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\app\ae_usr_tasks.c&quot; line=&quot;92&quot; function=&quot;task2&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101428&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;234&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001013C8&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;251&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101448&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;276&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101448&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;276&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101450&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;278&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101450&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;278&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x0010145C&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;280&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x0010145C&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;280&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101568&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;295&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x00101568&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;295&quot; function=&quot;k_send_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&#9;&lt;breakpoint ignorecount=&quot;0&quot; threadenabled=&quot;no&quot; core_list=&quot;&quot; continue=&quot;no&quot; verboseBreakpoints=&quot;yes&quot; kind=&quot;SOURCEPOSITION&quot;&gt;&#10;&#9;&#9;&lt;master_location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001015EC&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;319&quot; function=&quot;k_recv_msg&quot;/&gt;&#10;&#9;&#9;&lt;location index=&quot;0&quot; enabled=&quot;true&quot; version=&quot;2&quot; address=&quot;S:0x001015EC&quot; debugFile=&quot;N:/ECE350/Lab3/shared/ECE350/manual_code/lab3/IPC/src/kernel/k_msg.c&quot; hostFile=&quot;N:\ECE350\Lab3\shared\ECE350\manual_code\lab3\IPC\src\kernel\k_msg.c&quot; line=&quot;319&quot; function=&quot;k_recv_msg&quot;/&gt;&#10;&#9;&lt;/breakpoint&gt;&#10;&lt;/breakpoints&gt;&#10;"/>
+    <listAttribute key="com.arm.debug.views.common.AddressTracker.debugger.view.DisassemblyView.addresses">
+        <listEntry value="&lt;Next Instruction&gt;"/>
+    </listAttribute>
+    <listAttribute key="com.arm.debug.views.common.AddressTracker.debugger.view.DisassemblyView.ranges">
+        <listEntry value="100"/>
+    </listAttribute>
+    <listAttribute key="com.arm.debug.views.common.AddressTracker.debugger.view.MemoryView.addresses">
+        <listEntry value="&lt;Next Instruction&gt;"/>
+        <listEntry value=""/>
+    </listAttribute>
+    <listAttribute key="com.arm.debug.views.common.AddressTracker.debugger.view.MemoryView.ranges">
+        <listEntry value="1024"/>
+        <listEntry value=""/>
+    </listAttribute>
     <stringAttribute key="config_db_activity_name" value="Debug Cortex-A9_0"/>
     <stringAttribute key="config_db_connection_keys" value="rvi_address target_initialization_script dtsl_config dtsl_tracecapture_option dtsl_config_script config_file setup TCP_KILL_ON_EXIT TCP_DISABLE_EXTENDED_MODE"/>
     <stringAttribute key="config_db_connection_type" value="Bare Metal Debug"/>
@@ -115,7 +160,23 @@
     <stringAttribute key="config_file" value="CDB://../Arria V SoC/Altera_DEV5XS1.rvc"/>
     <booleanAttribute key="connectOnly" value="false"/>
     <stringAttribute key="connection_type" value="USB-Blaster"/>
-    <stringAttribute key="debugger.view.VariableTreeView:DebugOutlineColumnState" value="OutlineConfig1&#9;8&#9;0&#9;true&#9;true&#9;149&#9;-1&#9;true&#9;1&#9;false&#9;true&#9;90&#9;-1&#9;true&#9;2&#9;true&#9;true&#9;95&#9;-1&#9;true&#9;3&#9;true&#9;true&#9;41&#9;-1&#9;true&#9;4&#9;true&#9;true&#9;50&#9;-1&#9;true&#9;5&#9;true&#9;true&#9;37&#9;-1&#9;true&#9;6&#9;true&#9;true&#9;62&#9;-1&#9;true&#9;7&#9;true&#9;true&#9;53&#9;-1&#9;true"/>
+    <listAttribute key="debugger.view.DisassemblyView:current">
+        <listEntry value="&lt;Next Instruction&gt;"/>
+        <listEntry value="100"/>
+    </listAttribute>
+    <stringAttribute key="debugger.view.MemoryView" value="&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&#10;&lt;page&gt;&#10;&#9;&lt;memoryView/&gt;&#10;&lt;/page&gt;&#10;"/>
+    <listAttribute key="debugger.view.MemoryView:current">
+        <listEntry value="&lt;Next Instruction&gt;"/>
+        <listEntry value="1024"/>
+    </listAttribute>
+    <stringAttribute key="debugger.view.NewRegisterView:DebugOutlineColumnState" value="OutlineConfig1&#9;8&#9;0&#9;true&#9;true&#9;56&#9;-1&#9;true&#9;1&#9;false&#9;true&#9;109&#9;-1&#9;true&#9;2&#9;true&#9;true&#9;52&#9;-1&#9;true&#9;3&#9;false&#9;true&#9;47&#9;-1&#9;true&#9;4&#9;false&#9;true&#9;56&#9;-1&#9;true&#9;5&#9;true&#9;true&#9;43&#9;-1&#9;true&#9;6&#9;false&#9;true&#9;74&#9;-1&#9;true&#9;7&#9;true&#9;true&#9;61&#9;-1&#9;true"/>
+    <stringAttribute key="debugger.view.NewRegisterView:_selectedRegisterSet" value="All registers"/>
+    <mapAttribute key="debugger.view.NewRegisterView_registerSets"/>
+    <listAttribute key="debugger.view.TraceView:TRACE_EXPORT_FILTERS"/>
+    <stringAttribute key="debugger.view.VariableTreeView:DebugOutlineColumnState" value="OutlineConfig1&#9;8&#9;0&#9;true&#9;true&#9;178&#9;-1&#9;true&#9;1&#9;false&#9;true&#9;109&#9;-1&#9;true&#9;2&#9;true&#9;true&#9;152&#9;-1&#9;true&#9;3&#9;true&#9;true&#9;122&#9;-1&#9;true&#9;4&#9;true&#9;false&#9;56&#9;-1&#9;true&#9;5&#9;true&#9;true&#9;43&#9;-1&#9;true&#9;6&#9;true&#9;true&#9;113&#9;-1&#9;true&#9;7&#9;true&#9;true&#9;61&#9;-1&#9;true"/>
+    <listAttribute key="debugger.view.VariableTreeView:USER_ADDED_FILE_STATICS"/>
+    <listAttribute key="debugger.view.VariableTreeView:USER_ADDED_GLOBALS"/>
+    <booleanAttribute key="debugger.view.register.DrawAsHex" value="false"/>
     <booleanAttribute key="debugger.view.variable.DrawAsHex" value="false"/>
     <stringAttribute key="dtsl_config" value="USBBlaster_DtslScript"/>
     <stringAttribute key="dtsl_config_script" value="CDB://../Arria V SoC/dtsl_config_script.py"/>

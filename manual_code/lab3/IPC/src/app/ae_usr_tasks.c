@@ -46,16 +46,30 @@
  */
 void task1(void)
 {
-    task_t tid;
+    //task_t tid;
     RTX_TASK_INFO task_info;
     
 
     SER_PutStr (0,"task1: entering \n\r");
     /* do something */
     mbx_create(0xFF);
-    tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
-    tsk_get(tid, &task_info);
-    tsk_set_prio(tid, HIGH);
+    //tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
+    //tsk_get(tid, &task_info);
+    tsk_get(1, &task_info);
+    tsk_set_prio(2, LOWEST);
+    tsk_set_prio(4, MEDIUM);
+    tsk_set_prio(3, HIGH);
+
+
+    //back from user2: check mailbox
+    U8 *buf = mem_alloc(9);
+    task_t senderTID;
+    recv_msg(&senderTID, buf, 9);
+    mem_dealloc(buf);
+
+
+
+    tsk_yield();
     /* terminating */
     tsk_exit();
 }
@@ -73,9 +87,12 @@ void task2(void)
     struct rtx_msg_hdr *ptr = (void *)buf;
     ptr->length = msg_hdr_size + 1;
     ptr->type = DEFAULT;
-    buf+= msg_hdr_size;
-    (char*) buf = "Z";
-    send_msg(1, (void *) ptr);
+    buf += msg_hdr_size;
+    *buf = (U8) 'Z';
+    send_msg(4, (void *) ptr);
+
+    tsk_set_prio(3, LOW);//user1 runs next
+
 
 
     /* do something */

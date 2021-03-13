@@ -97,9 +97,9 @@ void priv_task2(void)
     RTX_TASK_INFO task_info;
     task_t tid;
 
-    k_tsk_create(&tid, &task1, LOW, 0x200);  /*create a user task */
+    k_tsk_create(&tid, &task1, HIGH, 0x200);  /*create a user task */
     k_tsk_get(tid, &task_info);
-    k_tsk_set_prio(tid, MEDIUM);
+    //k_tsk_set_prio(tid, MEDIUM);
 
 
     for (i = 1;;i++) {

@@ -117,11 +117,13 @@ int k_mem_init(void) {
     head->size = last_valid_address - (unsigned int) managed_memory_start;
     head->next = NULL;
 
-    printf("managed_memory_start: 0x%x\r\n", managed_memory_start);
+    //printf("managed_memory_start: 0x%x\r\n", managed_memory_start);
+    /*
     printf("last_valid_address: 0x%x\r\n", last_valid_address);
     printf("head_size: %d\r\n", head->size);
     printf("head_struct_size: %d\r\n", sizeof( *head ));
     printf("head_location: %x\r\n", head );
+    */
 
     #ifdef DEBUG_0
 		printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
