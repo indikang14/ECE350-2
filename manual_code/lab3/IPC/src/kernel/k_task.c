@@ -175,13 +175,14 @@ TCB * get_highest_priority( void );
 void heapify( int i );
 
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
-char * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
+int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
 int old_priority = NULL; // if a thread switched priority I need the previous state
 
 
 // note: scheduler is called when task is 
 TCB *scheduler(void)
 {
+	int state = thread_changed_event;
 	printf("size: %d \r\n", q_size );
     if ( initialized == 0 ) {  // initialize the queue
 
@@ -200,13 +201,13 @@ TCB *scheduler(void)
 
     } else { // check if a state has changed, this could be called from created, exits, prio changes
 
-        if ( thread_changed_event != NULL ) {
+        if ( thread_changed_event != -1 ) {
 
-            if ( thread_changed_event == "CREATED" ) {
+            if ( thread_changed_event == TCREATED ) {
                 enqueue( thread_changed_p );
-            } else if ( thread_changed_event == "EXITED" ) {
+            } else if ( thread_changed_event == TEXITED ) {
                 remove( thread_changed_p );
-            } else if ( thread_changed_event == "PRIORITY" ) {
+            } else if ( thread_changed_event == TPRIORITY ) {
                 changePriority( thread_changed_p );
             }
 
@@ -402,19 +403,19 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
-    	printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
-    	printf("address of new TCB is: 0x%x \r\n ", newTCB);
+    	//printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
+    	//printf("address of new TCB is: 0x%x \r\n ", newTCB);
 
         newTCB = &g_tcbs[i+1];
-        printf("address of next pTcb is: 0x%x \r\n ", newTCB);
+        //printf("address of next pTcb is: 0x%x \r\n ", newTCB);
         if (i+1 == 1) {
         	TCBhead->next = &g_tcbs[i+1];
         }
 
         oldTCB->next = newTCB; //join the linked list of TCBs LL only has active tasks
 
-        printf("address of next(next pTcb) is: 0x%x \r\n ", oldTCB -> next);
-        printf("address of head next is: 0x%x \r\n ", TCBhead -> next);
+        //printf("address of next(next pTcb) is: 0x%x \r\n ", oldTCB -> next);
+       // printf("address of head next is: 0x%x \r\n ", TCBhead -> next);
 
         newTCB->next = NULL; //initialize next pointer  of current task
         newTCB->TcbInfo = p_taskinfo;
@@ -453,7 +454,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     	 kcdInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
     	 newTCB->TcbInfo = kcdInfo;
     	 // initialize TCB structure
-    	 	newTCB->prio = HIGH;
+    	 	newTCB->prio = PRIO_RT;
     	 	newTCB->state = READY;
     	 	newTCB->priv = 0;
     	 	newTCB->TcbInfo->state = READY;
@@ -478,7 +479,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
-    oldTCB = TCBhead;
+
 
     while(oldTCB!= NULL) {
     	printf("PRINTING LIST OF TASKS CURRENTLY IN GTCBS:  \r\n");
@@ -487,6 +488,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
+    oldTCB = TCBhead;
     //scheduler();
     return RTX_OK;
 }
@@ -653,6 +655,9 @@ int k_tsk_run_new(void)
     p_tcb_old = gp_current_task;
     gp_current_task = scheduler();
 
+    //temp
+    TCB* curr = gp_current_task;
+
     
     if ( gp_current_task == NULL  ) {
         gp_current_task = p_tcb_old;        // revert back to the old task
@@ -768,6 +773,8 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 				printf("task(tid): %d", *task);
 				newTaskBlock = &g_tcbs[*task];
 				printf("address of new TCB is: 0x%x \r\n ", newTaskBlock);
+				newTaskInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+				newTaskBlock->TcbInfo = newTaskInfo;
 				newTaskBlock->next = traverse->next;
 				traverse->next = newTaskBlock;
 				taskFound = 1;
@@ -807,7 +814,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 
 	thread_changed_p = newTaskBlock; // if a thread has created, exits, and prio changes
 	printf("address of created task: 0x%x \r\n",thread_changed_p );
-	thread_changed_event = "CREATED";
+	thread_changed_event = TCREATED;
 
 	//call new task to run
 	 if (k_tsk_run_new() != RTX_OK) {
@@ -871,7 +878,7 @@ void k_tsk_exit(void)
 
     }
 
-	thread_changed_event = "EXITED";
+	thread_changed_event = TEXITED;
     thread_changed_p = p_tcb_old;
 
 
@@ -925,7 +932,7 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     }
     
     thread_changed_p = traverse;
-    thread_changed_event = "PRIORITY";
+    thread_changed_event = TPRIORITY;
     printf("old priority: %d \r\n",  traverse->prio);
     old_priority = traverse->prio;
 

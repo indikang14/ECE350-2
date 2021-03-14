@@ -51,6 +51,9 @@
  */
 
 #define TCB_MSP_OFFSET  4
+#define TCREATED 		0
+#define TEXITED			1
+#define TPRIORITY 		2
 
 /*
  *===========================================================================
@@ -116,7 +119,7 @@ extern TCB *gp_current_task;    // always point to the current RUNNING task
 extern BOOL kernelOwnedMemory;
 extern TCB* TCBhead;
 extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
-extern char * thread_changed_event; // if a thread has created, exits, and prio changes
+extern int thread_changed_event; // if a thread has created, exits, and prio changes
 extern int old_priority; // if a thread switched priority I need the previous state
 
 // TCBs are statically allocated inside the OS image

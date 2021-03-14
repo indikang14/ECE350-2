@@ -249,7 +249,7 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 
 
     	thread_changed_p = temp;
-    	thread_changed_event = "CREATED";
+    	thread_changed_event = TCREATED;
 
     	TCB* p_tcb_old = gp_current_task;
 
@@ -322,9 +322,13 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         p_tcb_old = gp_current_task;
         p_tcb_old->state = BLK_MSG;
 
-        thread_changed_event = "EXITED";
+        thread_changed_event = TEXITED;
         thread_changed_p = p_tcb_old;
+
         gp_current_task = scheduler();
+        //temp
+        TCB* list = TCBhead;
+        TCB* check = gp_current_task;
         gp_current_task->state = RUNNING;
         k_tsk_switch(p_tcb_old);
         return -1;

@@ -126,8 +126,8 @@ int k_mem_init(void) {
     */
 
     #ifdef DEBUG_0
-		printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
-		printf("k_mem_init: RAM ends at 0x%x\r\n", RAM_END);
+		//printf("k_mem_init: image ends at 0x%x\r\n", end_addr);
+		//printf("k_mem_init: RAM ends at 0x%x\r\n", RAM_END);
 	#endif /* DEBUG_0 */
 
     // head node was created and setup

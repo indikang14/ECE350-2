@@ -106,7 +106,7 @@ int hashCode(char char_key) {
 void kcd_task(void)
 {
     // mbx_create() 
-    if ( mbx_create( KCD_MBX_SIZE ) == 0 ) {
+    if ( mbx_create( KCD_MBX_SIZE ) != 0 ) {
         return;
     } 
 
