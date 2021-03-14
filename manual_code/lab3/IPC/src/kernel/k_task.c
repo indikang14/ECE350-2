@@ -792,6 +792,14 @@ void k_tsk_exit(void)
 #endif /* DEBUG_0 */
     TCB *p_tcb_old = gp_current_task;
 
+    //deallocate task's mailbox
+    if (p_tcb_old->mbx_cq.memblock_p != NULL) {
+    	kernelOwnedMemory = 1;
+    	k_mem_dealloc(p_tcb_old->mbx_cq.memblock_p);
+    	kernelOwnedMemory = 0;
+    }
+
+
     // remove from linked list
     if (TCBhead->tid == p_tcb_old->tid) {
     	TCBhead = TCBhead->next;
