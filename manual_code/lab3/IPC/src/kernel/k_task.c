@@ -401,11 +401,11 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     // create the rest of the tasks
     p_taskinfo = task_info;
     for ( int i = 0; i < num_tasks; i++ ) {
-    	printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
-    	printf("address of new TCB is: 0x%x \r\n ", newTCB);
+//    	printf("address of oldTCB is: 0x%x \r\n ", oldTCB);
+//    	printf("address of new TCB is: 0x%x \r\n ", newTCB);
 
         newTCB = &g_tcbs[i+1];
-        printf("address of next pTcb is: 0x%x \r\n ", newTCB);
+        //printf("address of next pTcb is: 0x%x \r\n ", newTCB);
         if (i+1 == 1) {
         	TCBhead->next = &g_tcbs[i+1];
         }
@@ -445,12 +445,12 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     oldTCB = TCBhead;
 
-    while(oldTCB!= NULL) {
-    	printf("PRINTING LIST OF TASKS CURRENTLY IN GTCBS:  \r\n");
-    	printf("address of task: 0x%x and task prio is: %d \r\n", oldTCB, oldTCB->prio);
-    	oldTCB = oldTCB->next;
-
-    }
+//    while(oldTCB!= NULL) {
+//    	printf("PRINTING LIST OF TASKS CURRENTLY IN GTCBS:  \r\n");
+//    	printf("address of task: 0x%x and task prio is: %d \r\n", oldTCB, oldTCB->prio);
+//    	oldTCB = oldTCB->next;
+//
+//    }
 
     //scheduler();
     return RTX_OK;

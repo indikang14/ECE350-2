@@ -247,8 +247,9 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
     //if receiving task state is blocked, unblock it and preempt the scheduler if prio is higher than current task
     if(temp->state == BLK_MSG) {
 
-    	//thread_changed_p = temp;
-    	//thread_changed_event = "PRIORITY";
+
+    	thread_changed_p = temp;
+    	thread_changed_event = "CREATED";
 
     	TCB* p_tcb_old = gp_current_task;
 
@@ -268,7 +269,10 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
     	        //g_num_active_tasks--;				//number of active tasks decreases
     	        k_tsk_switch(p_tcb_old);            // switch stacks
     	    }
-    	}
+
+
+
+    }
 
     int sizeOfData =  (readHdr->length - sizeof(RTX_MSG_HDR) );
 
@@ -326,7 +330,7 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         return -1;
     }
 
-    if (metamsg->msg.header.length + sizeof(RTX_MSG_HDR) > len) {
+    if (metamsg->msg.header.length  > len) {
         // not big enough buffer
         kernelOwnedMemory = 1;
         k_mem_dealloc(metamsg);
@@ -342,7 +346,7 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         *sender_tid = metamsg->senderTID;
     }
 
-    char * data = (U8 *) buf + sizeof(RTX_MSG_HDR);
+    U8 * data = (U8 *) buf + sizeof(RTX_MSG_HDR);
 
     for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
         data[i] = metamsg->msg.data[i];
@@ -352,6 +356,8 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
     kernelOwnedMemory = 1;
     k_mem_dealloc(metamsg);
     kernelOwnedMemory = 0;
+
+   // (RTX_MSG_HDR)
 
     return 0;
 }

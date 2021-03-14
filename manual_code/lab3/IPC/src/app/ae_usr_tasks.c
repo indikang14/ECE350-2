@@ -65,7 +65,31 @@ void task1(void)
     U8 *buf = mem_alloc(9);
     task_t senderTID;
     recv_msg(&senderTID, buf, 9);
+
+
     mem_dealloc(buf);
+
+
+    size_t msg_hdr_size = sizeof(struct rtx_msg_hdr);
+     buf = mem_alloc(msg_hdr_size + 5);
+        struct rtx_msg_hdr *ptr = (void *)buf;
+        ptr->length = msg_hdr_size + 5;
+        ptr->type = DEFAULT;
+        buf += msg_hdr_size;
+        //buf = "RAPS";
+        buf[0] = 'R';
+        buf[1] = 'A';
+        buf[2] ='P'	;
+        buf[3] = 'S';
+        buf[4] = 0;
+
+        send_msg(3, (void *) ptr);
+
+
+
+        tsk_set_prio(3, HIGH); //user2 runs
+
+
 
 
 
@@ -92,6 +116,30 @@ void task2(void)
     send_msg(4, (void *) ptr);
 
     tsk_set_prio(3, LOW);//user1 runs next
+    mem_dealloc(buf);
+
+    buf = mem_alloc(13);
+    task_t senderTID;
+    recv_msg(&senderTID, buf, 13);
+
+    struct rtx_msg_hdr* temp = (struct rtx_msg_hdr*) buf;
+       //temp += sizeof(struct rtx_msg_hdr);
+       U8 * data = (U8*) temp + sizeof(struct rtx_msg_hdr);
+
+//       for(int i=0;i< 5; i++){
+//    	   data[i];
+//       }
+
+
+
+
+
+//    ptr = NULL;
+//    send_msg(4, (void *) ptr);
+
+
+
+
 
 
 
