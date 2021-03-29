@@ -51,12 +51,33 @@
  */
 
 #define TCB_MSP_OFFSET  4
+#define TCREATED 		0
+#define TEXITED			1
+#define TPRIORITY 		2
 
 /*
  *===========================================================================
  *                             STRUCTURES
  *===========================================================================
  */
+
+//CIRCULAR QUEUE MAILBOX
+typedef struct mbx_message {
+    RTX_MSG_HDR header;
+    U8 data[];
+} mbx_message;
+typedef struct mbx_metamsg {
+    U8 senderTID;
+    mbx_message msg;
+} mbx_metamsg;
+typedef struct circularQueue {
+    void *head; //start of head. void* because we can't trust that if it were a mbx_metamsg it wouldn't wrap around
+    void *tail; //start of tail. void* because we can't trust that if it were a mbx_metamsg it wouldn't wrap around
+    size_t      size;
+    size_t      remainingSize;
+    U8          *memblock_p; //first byte of the mailbox memblock
+} CQ;
+
 
 /**
  * @brief TCB data structure definition to support two kernel tasks.
@@ -69,6 +90,9 @@ typedef struct tcb {
     U8          prio;   /**> Execution priority                         */
     U8          state;  /**> task state                                 */
     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
+    U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
+    RTX_TASK_INFO *TcbInfo;
+    CQ mbx_cq;
 } TCB;
 
 /*
@@ -92,6 +116,11 @@ extern unsigned int Image$$ZI_DATA$$ZI$$Limit; 	// Linker defined symbol
 
 // task related globals are defined in k_task.c
 extern TCB *gp_current_task;    // always point to the current RUNNING task
+extern BOOL kernelOwnedMemory;
+extern TCB* TCBhead;
+extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
+extern int thread_changed_event; // if a thread has created, exits, and prio changes
+extern int old_priority; // if a thread switched priority I need the previous state
 
 // TCBs are statically allocated inside the OS image
 extern TCB g_tcbs[MAX_TASKS];

@@ -46,14 +46,6 @@
 
 int k_rtx_init(RTX_TASK_INFO *task_info, int num_tasks)
 {
-    // Initialize UART0 Rx interrupts
-    UART0_Init();
-    // Set HPS0 timer to count down from
-    config_hps_timer(0,10000,1,0);
-    // Set A9 timer to count down from 0xFFFFFFFF every 1 us
-    // With this setting, A9 timer resets every ~1.2 hrs
-    config_a9_timer(0xFFFFFFFF,1,0,199);
-
     /* interrupts are already disabled when we enter here */
     if ( k_mem_init() != RTX_OK) {
         return RTX_ERR;

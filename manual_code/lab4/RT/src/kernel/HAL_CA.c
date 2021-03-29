@@ -44,8 +44,8 @@
 #include "interrupt.h"
 #include "Serial.h"
 #include "k_task.h"
-#include "timer.h"
-#include "printf.h"
+#include "k_msg.h"
+#include "rtx.h"
 
 #pragma push
 #pragma arm
@@ -203,7 +203,7 @@ SVC_EXIT
 __asm void IRQ_Handler(void){
         PRESERVE8
         ARM
-        IMPORT	c_IRQ_Handler
+        IMPORT SER_Interrupt
 
         SUB     LR, LR, #4              ; Pre-adjust LR
         SRSFD   SP!, #Mode_SVC          ; Push LR_IRQ and SPSR_IRQ onto SVC mode stack
@@ -213,7 +213,13 @@ __asm void IRQ_Handler(void){
         SUB 	SP, SP, #8
         STM     SP, {SP}^		; Push SP_USR onto the kernel stack
 
-        BL 	c_IRQ_Handler           ; Call the uart interrupt handler for UART0 interrupt
+        LDR 	R4, =GIC_BASE
+        LDR 	R5, [R4, #0x0C]         ; Read the interrupt id from ICCIAR
+        STR 	R5, [R4, #0x10]         ; Write interrupt id to ICCEOIR to clear the interrupt
+        CMP 	R5, #UART_IRQ_ID        ; Compare with interrupt id for UART0_IRQ
+
+        BNE 	EXIT_IRQ                ; Exit if not recognized
+        BL 	SER_Interrupt           ; Call the uart interrupt handler for UART0 interrupt
 
 EXIT_IRQ
         LDM     SP, {SP}^               ; Restore SP_USR and R0-R12 from their saved values on the stack
@@ -225,59 +231,47 @@ EXIT_IRQ
 #pragma pop
 
 
-void c_IRQ_Handler(void)
+// modified to call the KCD task
+void SER_Interrupt(void)
 {
-	static unsigned int a9_timer_last = 0xFFFFFFFF; // the initial value of free-running timer
-	unsigned int a9_timer_curr;
+  
+  char msg[5]; // static allocation of max message bytes
+  int msg_len = 0;
+  size_t hdr_size = sizeof(struct rtx_msg_hdr);
 
-	char switch_flag = 0;
-	// Read the ICCIAR from the CPU Interface in the GIC
-	U32 interrupt_ID = GIC_AckPending();
-	if (interrupt_ID == UART0_Rx_IRQ_ID)
+  if(Interrupt_Rx())			// check if interrupt type is Data Receive
+  {
+	while(Rx_Data_Ready())	        // read while Data Ready is valid
 	{
-		if(UART0_GetRxIRQStatus())			// check if interrupt type is Data Receive
-		{
-			while(UART0_GetRxDataStatus())	// read while Data Ready is valid
-			{
-				char c = UART0_GetRxData();	// would also clear the interrupt if last character is read
-				SER_PutChar(1, c);	        // display back
-			}
-			switch_flag = 1;
-		}
-		else
-		{   // unexpected interrupt type
-			SER_PutStr(0, "Error interrupt type!\r\n");
-		}
+	      char c = Rx_Read_Data();	// would also clear the interrupt if last character is read
+
+              msg[msg_len] = c;
+              msg_len++;
+
+	      SER_PutChar(1, c);	// display back
 	}
-	else if(interrupt_ID == HPS_TIMER0_IRQ_ID)
-	{
-		timer_clear_irq(0);
-		a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
-		if ((a9_timer_last - a9_timer_curr) > 500000U)
-		{
-			printf("%d ms passed!\r\n", ((a9_timer_last - a9_timer_curr)/1000U));
-			a9_timer_last = a9_timer_curr;
-		}
-	}
-	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
-	{
-		timer_clear_irq(1);
-	}
-	else if(interrupt_ID == A9_TIMER_IRQ_ID)
-	{
-		timer_clear_irq(2);
-	}
-	else
-	{
-		printf("unrecognized interrupt!\r\n");
-	}
-	// Write to the End of Interrupt Register (ICCEOIR)
-	GIC_EndInterrupt(interrupt_ID);
-	// Make sure to call line 246 before context switching
-	if (switch_flag == 1)
-	{
-		k_tsk_run_new();
-	}
+  }
+  else{                                 // unexpected interrupt type
+        SER_PutStr(0, "Error interrupt type\n");
+  }
+ 
+  // ask indraj if this is fine for both sending & running k_tsk_run_new
+  size_t tot_len = hdr_size + msg_len;
+  char buff[tot_len];
+
+
+  struct rtx_msg_hdr * hdr_ptr = (void *) &buff;    
+
+  hdr_ptr->type = KEY_IN;
+  hdr_ptr->length = tot_len; 
+
+  hdr_ptr += hdr_size;
+
+  for ( int i = 0;  i < msg_len; i++)
+        *(buff + i) = msg[i];
+
+  send_msg( TID_KCD, (void *)&buff );
+  k_tsk_run_new();
 }
 
 /*
