@@ -913,6 +913,8 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
 #endif /* DEBUG_0 */
     TCB* traverse = TCBhead;
 
+    
+
     // check valid prio
     if (prio != HIGH && prio != MEDIUM && prio != LOW && prio != LOWEST ) {
       return RTX_ERR;
@@ -924,6 +926,11 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     }
     if (traverse == NULL || traverse->tid == TID_NULL) {
       return RTX_ERR;
+    }
+
+    // added by C.J.V
+    if ( prio == PRIO_RT && traverse->TcbInfo->prio != PRIO_RT ) {
+        return RTX_ERR;
     }
 
     // check that the current task is has edit privledges
@@ -960,6 +967,9 @@ int k_tsk_get(task_t task_id, RTX_TASK_INFO *buffer)
       return RTX_ERR;
     }
 	
+    // add a spot for p_n, C.J.V
+    buffer->p_n = traverse->TcbInfo->p_n;
+
     buffer->tid = traverse->tid;
     buffer->prio = traverse->prio;
     buffer->state = traverse->state;
