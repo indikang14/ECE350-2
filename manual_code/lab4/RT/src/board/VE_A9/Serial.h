@@ -150,12 +150,11 @@ typedef struct {
 #define NULL 0
 /* ECE350 END */
 
-/*TODO: add n to ser_xxx and also delete ser_enable and ser_disable*/
+
 extern void SER_Init(int n);
 extern char SER_GetChar (int n);
 extern void SER_PutChar(int n, char c);
-extern int  SER_PutStr(int n, char *s);
-
+extern int SER_PutStr(int n, char *s);
 
 extern int Interrupt_Rx(void);
 extern int Rx_Data_Ready(void);

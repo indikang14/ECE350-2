@@ -1,4 +1,4 @@
- /**************************************************************************//**
+/**************************************************************************//**
  * @file     Serial.h
  * @brief    Simple polled UART driver, modified for DE1_SoC
  * @version  V1.2021.01
@@ -9,7 +9,6 @@
  *
  ******************************************************************************/
 /* Copyright (c) 2011 - 2013 ARM LIMITED
-
    All rights reserved.
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
