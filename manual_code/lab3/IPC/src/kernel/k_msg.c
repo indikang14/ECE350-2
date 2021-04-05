@@ -296,6 +296,8 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 			p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
 			//g_num_active_tasks--;				//number of active tasks decreases
 			k_tsk_switch(p_tcb_old);            // switch stacks
+		} else { //keep running old task
+			temp->state = READY;
 		}
     }
 
