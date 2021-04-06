@@ -1,53 +1,108 @@
-/**************************************************************************//**
+ /**************************************************************************//**
  * @file     Serial.c
- * @brief    Simple polled UART driver, modified for DE1_SoC
- * @version  V1.2021.01
- * @date     28 January 2021
- * @author   Yiqing Huang, Zehan Gao, ARM
+ * @brief    Simple polled UART driver
+ * @version
+ * @date     27 October 2015
  *
- * @note     
+ * @note
+ *
+ *  Code modification Copyright (c) Yiqing Huang
+ *
+ *  All rights reserved.
+ *  Redistribution and use in source and binary forms, with or without
+ *  modification, are permitted provided that the following conditions are met:
+ *  - Redistributions of source code must retain the above copyright
+ *    notice and the following disclaimer.
+ *
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ *  AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ *  IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ *  ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS AND CONTRIBUTORS BE
+ *  LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ *  CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+ *  SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+ *  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+ *  CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ *  ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+ *  POSSIBILITY OF SUCH DAMAGE.
  *
  ******************************************************************************/
 /* Copyright (c) 2011 - 2015 ARM LIMITED
+
    All rights reserved.
    Redistribution and use in source and binary forms, with or without
    modification, are permitted provided that the following conditions are met:
    - Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
+     notice, this list of conditions and the following disclaimer.
    - Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
+     notice, this list of conditions and the following disclaimer in the
+     documentation and/or other materials provided with the distribution.
    - Neither the name of ARM nor the names of its contributors may be used
-   to endorse or promote products derived from this software without
-   specific prior written permission.
- *
- THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
- AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
- IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS AND CONTRIBUTORS BE
- LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
- ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- POSSIBILITY OF SUCH DAMAGE.
- ---------------------------------------------------------------------------*/
+     to endorse or promote products derived from this software without
+     specific prior written permission.
+   *
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+   AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+   ARE DISCLAIMED. IN NO EVENT SHALL COPYRIGHT HOLDERS AND CONTRIBUTORS BE
+   LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+   CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+   SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+   INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+   CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+   ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+   POSSIBILITY OF SUCH DAMAGE.
+   ---------------------------------------------------------------------------*/
 
-#include "../DE1_SoC_A9/Serial.h"
+#include "Serial.h"
 
 
 /*----------------------------------------------------------------------------
-  Write String to Serial Port
+  Enable Serial Port
  *----------------------------------------------------------------------------*/
-int SER_PutStr(int n, char *s)
+void SER_Enable(void)
 {
-  if (s == NULL)
-    return 1;
-  while (*s !=0) {      /* loop through each char in the string */
-    SER_PutChar(n, *s++);/* print the char, then ptr increments  */
-  }
-  return 0;
+    UART0->UARTCR = UART_CR_UARTEN | UART_CR_TXE | UART_CR_RXE;
+}
+
+/*----------------------------------------------------------------------------
+  Disable Serial Port
+ *----------------------------------------------------------------------------*/
+void SER_Disable(void)
+{
+    UART0->UARTCR = 0x0;
+}
+
+/*----------------------------------------------------------------------------
+  Set baud rate
+ *----------------------------------------------------------------------------*/
+void SER_Set_baud_rate(int n, uint32_t baud_rate)
+{
+    uint32_t divider;
+    uint32_t mod;
+    uint32_t fraction;
+
+    /*
+     * Set baud rate
+     *
+     * IBRD = UART_CLK / (16 * BAUD_RATE)
+     * FBRD = ROUND((64 * MOD(UART_CLK,(16 * BAUD_RATE))) / (16 * BAUD_RATE))
+     */
+    divider   = UART0_CLK / (16 * baud_rate);
+    mod       = UART0_CLK % (16 * baud_rate);
+    fraction  = (((8 * mod) / baud_rate) >> 1) + (((8 * mod) / baud_rate) & 1);
+
+    UART0->UARTIBRD = divider;
+    UART0->UARTFBRD = fraction;
+}
+
+void SER_Init(int n)
+{
+    SER_Disable();  // Disable UART
+    SER_Set_baud_rate(n, 38400);
+    UART0->UARTLCR_H = UART_LCRH_WLEN_8 | UART_LCRH_FEN; // 8 bits, 1 stop bit, no parity, FIFO enabled
+    SER_Enable();   // Enable UART and enable TX/RX
 }
 
 /*----------------------------------------------------------------------------
@@ -55,72 +110,31 @@ int SER_PutStr(int n, char *s)
  *----------------------------------------------------------------------------*/
 void SER_PutChar(int n, char c)
 {
-  if(n == 0){
-    JTAG_UART_PutChar(c);
-  }
-  else if(n == 1){
-    UART0_PutChar(c);
-  }
+    while (UART0->UARTFR & 0x20);   // Wait for UART TX to become free
+    //if (c == '\n')
+    //{
+    //  UART0->UARTDR = '\r';
+    //  while (UART0->UARTFR & 0x20);
+    //}
+    UART0->UARTDR = c;
 }
 
-/*----------------------------------------------------------------------------
-  Read character from Serial Port (blocking read)
- *----------------------------------------------------------------------------*/
-char SER_GetChar(int n){
-  if(n == 0){
-    return JTAG_UART_GetChar();
-  }
-  else if(n == 1){
-    return UART0_GetChar();
-  }
-  return '\0';
-}
+/* HYQS */
 
 /*----------------------------------------------------------------------------
-  UART0 initialization
+  Write String to Serial Port
  *----------------------------------------------------------------------------*/
-void UART0_Init(void)
+int SER_PutStr(int n, char *s)
 {
-	UART0->UARTSRR = 0x1;
-	UART0->UARTIER_DLH |= 0x1;  	//enable rx interrupt
-	UART0_SetBaudRate( 115200 ); 	// set baud rate to 115200
-	UART0->UARTLCR |= 0x3; 			// 8 bits
-	UART0->UART_IIR_FCR = 0x7; 	    //FIFO enabled
+  if (s == NULL)
+	  return 1;
+  while (*s !=0) {      /* loop through each char in the string */
+	  SER_PutChar(0, *s++);/* print the char, then ptr increments  */
+  }
+  return 0;
 }
-
 /*----------------------------------------------------------------------------
-  Set baud rate
- *----------------------------------------------------------------------------*/
-void UART0_SetBaudRate(uint32_t baud_rate)
-{
-  UART0->UARTLCR |= 0x80;	                      // set DLAB to enable setup of baud rate
-  uint32_t divisor = UART0_CLK/(baud_rate * 16);      // calculate the divisor value according to the datasheet
-  UART0->UARTDR = divisor;			      // the lower 8 bit are written to Data Register
-  UART0->UART_IIR_FCR = divisor >> 8;		      // the higher 8 bit are written to IIR
-  UART0->UARTLCR &= ~(0x80);	                      // clear DLAB bit and return to normal
-}
-
-/*----------------------------------------------------------------------------
-  Write character to UART0 (PuTTY)
- *----------------------------------------------------------------------------*/
-void UART0_PutChar(char c)
-{
-  while ((UART0->UARTLSR & 0x20) == 0 || (UART0->UARTLSR & 0x40) == 0);   // Wait for UART TX to become free
-  UART0->UARTDR = c;
-}
-
-
-/*----------------------------------------------------------------------------
-  Read character from UART0 (PuTTY) (blocking read)
- *----------------------------------------------------------------------------*/
-char UART0_GetChar (void)
-{
-  while (UART0->UARTLSR & 0x1 == 0);                // Wait for a character to arrive
-  return UART0->UARTDR;
-}
-
-/*----------------------------------------------------------------------------
- * Call back function for printf (using JTAG UART)
+ * Call back function for printf
  *----------------------------------------------------------------------------*/
 /**
  * @brief   call back function for printf
@@ -130,73 +144,34 @@ char UART0_GetChar (void)
 void putc(void *p, char c)
 {
   if ( p != NULL ) {
-    SER_PutStr(0,"putc: first parameter needs to be NULL");
+    SER_PutStr(0, "putc: first parameter needs to be NULL");
   } else {
-    SER_PutChar(0,c);
+      SER_PutChar(0, c);
   }
 }
+
+/* HYQE */
 
 /*----------------------------------------------------------------------------
-  Write character to JTAG
+  Read character from Serial Port (blocking read)
  *----------------------------------------------------------------------------*/
-void JTAG_UART_PutChar(char c)
+char SER_GetChar (int n)
 {
-  while(1)
-  {
-    if(JTAG_UART->control & 0xFFFF0000)
-    {
-      JTAG_UART->data = c;
-      return;
-    }
-  }
+    while (UART0->UARTFR & 0x10);   // Wait for a character to arrive
+    return UART0->UARTDR;
 }
 
-/*----------------------------------------------------------------------------
-  Read character from JTAG UART (blocking read)
- *----------------------------------------------------------------------------*/
-char JTAG_UART_GetChar(void)
+int Interrupt_Rx(void)
 {
-  while(1)
-  {
-    int data;
-    data = JTAG_UART->data;
-    if(data & 0x00008000)
-      return ((char)data & 0xFF);
-  }
+	return 0;
 }
 
-/*----------------------------------------------------------------------------
-  Serial UART interrupt handler (UART0)
- *----------------------------------------------------------------------------*/
-/*
-void SER_Interrupt(void)
+int Rx_Data_Ready(void)
 {
-  int n = UART0->UART_IIR_FCR;	            // read UART0 pending interrupt type
-  if((n & 0xF) == 0x4)			    // type 0x4 is receive data
-  {
-    while(UART0->UARTLSR & 0x1 == 0x1)	    // read while Data Ready is valid
-    {
-      char c = UART0->UARTDR;		    // would also clear the interrupt if last character is read
-      UART0_PutChar(c);			    // display back
-    }
-  }
-  else{                                     // unexpected interrupt type
-    SER_PutStr(1, "Error interrupt type\n");
-  }
-}
-*/
-
-int UART0_GetRxIRQStatus(void)
-{
-        return((UART0->UART_IIR_FCR & 0xF) == 0x4);
+	return 0;
 }
 
-int UART0_GetRxDataStatus(void)
+char Rx_Read_Data(void)
 {
-	return UART0->UARTLSR & 0x1;
-}
-
-char UART0_GetRxData(void)
-{
-	return UART0->UARTDR & 0xFF;
+	return 0;
 }
