@@ -3,7 +3,7 @@
  *
  *                  UNIVERSITY OF WATERLOO ECE 350 RTOS LAB
  *
- *                     Copyright 2020-2021 Yiqing Huang
+ *                 Copyright 2020-2021 ECE 350 Teaching Team
  *                          All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -35,25 +35,67 @@
 #include "ae_priv_tasks.h"
 #include "ae_usr_tasks.h"
 
-/*
- *===========================================================================
- *                            FUNCTION PROTOTYPES
- *===========================================================================
- */
 
-/**************************************************************************//**
- * @file        ae.h
- * @brief       Automated Evaluation (AE) Framework Header File
- *
- * @version     V1.2021.01
- * @authors     Yiqing Huang
- * @date        2021 JAN
- *
- * @attention
- * @note
- * @details
- *
- *****************************************************************************/
+
+#define TEST 10
+#define KCD_CASE 0
+
+#if TEST == 0
+	#define init_tasks 1
+#endif
+
+#if TEST == 1
+	#if KCD_CASE == 0
+		#define init_tasks 2
+	#elif KCD_CASE == 1
+		#define init_tasks 1
+	#endif
+#endif
+
+#if TEST == 2
+	#define init_tasks 1
+#endif
+
+#if TEST == 3
+	#define init_tasks 1
+#endif
+
+#if TEST == 4
+	#define init_tasks 2
+#endif
+
+#if TEST == 5
+	#define init_tasks 2
+#endif
+
+#if TEST == 6
+	#define init_tasks 1
+#endif
+
+#if TEST == 7
+	#define init_tasks 3
+#endif
+
+#if TEST == 8
+	#if KCD_CASE == 0
+		#define init_tasks 2
+	#elif KCD_CASE == 1
+		#define init_tasks 1
+	#endif
+#endif
+
+#if TEST == 9
+	#if KCD_CASE == 0
+		#define init_tasks 4
+	#elif KCD_CASE == 1
+		#define init_tasks 3
+	#endif
+#endif
+
+#if TEST == 10
+	#define init_tasks 2
+#endif
+
 
 /*
  *===========================================================================

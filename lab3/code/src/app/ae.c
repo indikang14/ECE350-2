@@ -3,7 +3,7 @@
  *
  *                  UNIVERSITY OF WATERLOO ECE 350 RTOS LAB
  *
- *                     Copyright 2020-2021 Yiqing Huang
+ *                 Copyright 2020-2021 ECE 350 Teaching Team
  *                          All rights reserved.
  *
  *  Redistribution and use in source and binary forms, with or without
@@ -26,21 +26,9 @@
  ****************************************************************************
  */
 
-/**************************************************************************//**
- * @file        ae.c
- * @brief       Automated Evaluation (AE) Framework Source File
- *
- * @version     V1.2021.01.lab2
- * @authors     Yiqing Huang
- * @date        2021 JAN
- *
- * @attention
- * @note
- * @details
- *
- *****************************************************************************/
-
 #include "ae.h"
+
+extern void kcd_task(void);
 
 /**************************************************************************//**
  * @brief   	ae_init
@@ -73,22 +61,6 @@ int ae_set_sys_info(RTX_SYS_INFO *sys_info) {
     // Scheduling sys info set up, only do DEFAULT in lab2
     sys_info->sched = DEFAULT;
 
-    /************* NOT USED in LAB2 ********************
-    struct timeval_rt budget;
-    struct timeval_rt period;
-
-    budget.sec = 0;
-    budget.usec = MIN_RTX_QTM * 10;
-
-    period.sec = 0;
-    period.usec = MIN_RTX_QTM * 100;
-
-
-    sys_info->rtx_time_qtm = 10 * MIN_RTX_QTM;
-
-    sys_info->server.b_n = budget;
-    sys_info->server.p_n = period;
-    ****************************************************/
     return RTX_OK;
 }
 
@@ -102,31 +74,242 @@ int ae_set_sys_info(RTX_SYS_INFO *sys_info) {
 void ae_set_task_info(RTX_TASK_INFO *tasks, int num_tasks) {
 
     if (tasks == NULL) {
+    	printf("[ERROR] RTX_TASK_INFO undefined\n\r");
         return;
     }
 
-    for (int i = 0; i < num_tasks; i++ ) {
-        tasks[i].u_stack_size = 0x0;
-        tasks[i].prio = LOW;
-        tasks[i].priv = 1;
-    }
-    tasks[0].ptask = &priv_task1;
-    tasks[1].ptask = &priv_task2;
-    tasks[2].ptask = &task2;
-    tasks[2].priv = 0;
+#if TEST == 0
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_00!\r\n");
+    printf("Info: Initializing system with a single user task!\r\n");
+
+    tasks[0].prio = HIGH;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 1
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_01!\r\n");
+    printf("Info: Initializing system with a single user task and the KCD task!\r\n");
+
+    tasks[0].prio = HIGH;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+	#if KCD_CASE == 0
+    	tasks[1].prio = LOW;
+    	tasks[1].priv = 0;
+    	tasks[1].ptask = &kcd_task;
+    	tasks[1].k_stack_size = 0x200;
+    	tasks[1].u_stack_size = 0x200;
+	#endif
+#endif
+
+#if TEST == 2
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_02!\r\n");
+    printf("Info: Initializing system with a single user task!\r\n");
+
+    tasks[0].prio = HIGH;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 3
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_03!\r\n");
+    printf("Info: Initializing system with a single user task!\r\n");
+
+    tasks[0].prio = HIGH;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 4
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_04!\r\n");
+    printf("Info: Initializing system with two user tasks (LO and L priorities)!\r\n");
 
     tasks[0].prio = LOWEST;
-    tasks[1].prio = MEDIUM;
-    tasks[2].prio = LOW;
-    return;
-}
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
 
-/* only used in LAB1 */
-#ifdef AE_LAB1
-int ae_start(void) {
-    return test_mem();
-}
+    tasks[1].prio = LOW;
+	tasks[1].priv = 0;
+	tasks[1].ptask = &utask2;
+	tasks[1].k_stack_size = 0x200;
+	tasks[1].u_stack_size = 0x200;
+
 #endif
+
+#if TEST == 5
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_05!\r\n");
+    printf("Info: Initializing system with two user tasks (L and LO priorities)!\r\n");
+
+    tasks[0].prio = LOW;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+    tasks[1].prio = LOWEST;
+	tasks[1].priv = 0;
+	tasks[1].ptask = &utask2;
+	tasks[1].k_stack_size = 0x200;
+	tasks[1].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 6
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_06!\r\n");
+    printf("Info: Initializing system with a single user task!\r\n");
+
+    tasks[0].prio = HIGH;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 7
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_07!\r\n");
+    printf("Info: Initializing system with three user tasks (M, L, and LO priorities)!\r\n");
+
+    tasks[0].prio = MEDIUM;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+    tasks[1].prio = LOW;
+	tasks[1].priv = 0;
+	tasks[1].ptask = &utask2;
+	tasks[1].k_stack_size = 0x200;
+	tasks[1].u_stack_size = 0x200;
+
+    tasks[2].prio = LOWEST;
+	tasks[2].priv = 0;
+	tasks[2].ptask = &utask3;
+	tasks[2].k_stack_size = 0x200;
+	tasks[2].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 8
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_08!\r\n");
+    printf("Info: Initializing system with a single user task and the KCD task!\r\n");
+
+    tasks[0].prio = MEDIUM;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+	#if KCD_CASE == 0
+    	tasks[1].prio = HIGH;
+    	tasks[1].priv = 0;
+    	tasks[1].ptask = &kcd_task;
+    	tasks[1].k_stack_size = 0x200;
+    	tasks[1].u_stack_size = 0x200;
+	#endif
+
+#endif
+
+#if TEST == 9
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_09!\r\n");
+    printf("Info: Initializing system with three user task and the KCD task!\r\n");
+    printf("Info: UT1 (M), UT2 (L), KCD (H), UT4 (L)!\r\n");
+
+    tasks[0].prio = MEDIUM;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+    tasks[1].prio = LOW;
+	tasks[1].priv = 0;
+	tasks[1].ptask = &utask2;
+	tasks[1].k_stack_size = 0x200;
+	tasks[1].u_stack_size = 0x200;
+
+	#if KCD_CASE == 0
+    	tasks[2].prio = HIGH;
+    	tasks[2].priv = 0;
+    	tasks[2].ptask = &kcd_task;
+    	tasks[2].k_stack_size = 0x200;
+    	tasks[2].u_stack_size = 0x200;
+	#endif
+
+	tasks[3].prio = LOWEST;
+	tasks[3].priv = 0;
+	tasks[3].ptask = &utask3;
+	tasks[3].k_stack_size = 0x200;
+	tasks[3].u_stack_size = 0x200;
+
+#endif
+
+#if TEST == 10
+
+    printf("============================================\r\n");
+    printf("============================================\r\n");
+    printf("Info: Starting T_10!\r\n");
+    printf("Info: Initializing system with two user tasks (M and L priorities)!\r\n");
+
+    tasks[0].prio = MEDIUM;
+	tasks[0].priv = 0;
+	tasks[0].ptask = &utask1;
+	tasks[0].k_stack_size = 0x200;
+	tasks[0].u_stack_size = 0x200;
+
+    tasks[1].prio = LOW;
+	tasks[1].priv = 0;
+	tasks[1].ptask = &utask2;
+	tasks[1].k_stack_size = 0x200;
+	tasks[1].u_stack_size = 0x200;
+
+#endif
+
+}
 
 /*
  *===========================================================================

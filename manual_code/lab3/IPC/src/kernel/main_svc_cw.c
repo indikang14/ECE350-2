@@ -86,7 +86,7 @@ int main()
     printf("TESTING DEBUGGER!");
 
     // System and Task set up by auto testing software
-    if (ae_init(&sys_info, task_info, 3) != RTX_OK) {
+    if (ae_init(&sys_info, task_info, 2) != RTX_OK) {
     	printf("RTX INIT FAILED\r\n");
     	return RTX_ERR;
     }
@@ -94,7 +94,7 @@ int main()
     // start the RTX and built-in tasks
     if (mode == MODE_SVC) {
         gp_current_task = NULL;
-        k_rtx_init(task_info, 3);
+        k_rtx_init(task_info, 2);
     }
 
 
