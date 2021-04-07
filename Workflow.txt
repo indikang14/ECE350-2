@@ -1,0 +1,23 @@
+
+- Create the KCD user task in system setup with TID TID_KCD as global ** how do I create user level tasks? **
+- mbx_create() 
+- Create a buf for command & keyboard
+- recv_msg() 
+- if we're unblocked: 
+	if KCD_REG:
+		- we add that task to a "HASH TABLE", such 
+that an input command will route to this registered command
+	if KEY_IN:
+		- if not "ENTER" then we add the key to a char queue
+		- if "ENTER", then we check if the input message is well formatted, if not, we emit an error, if it is, then we forward the message to the registered task's mailbox using KCD_CMD
+
+ 
+Things to bring up on the call today:
+
+- Ask Indraj Did I create the KCD task correctly / ask him to do it
+
+- Based on how it's written, is the command registration only 1 character of data? the first line is confusing
+
+- Would be nice to have a check_tid_active function
+
+- Are keys sent to the KCD in a single buf or is it a series of bufs. Do I need to keep a queue of input chars
