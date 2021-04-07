@@ -56,8 +56,7 @@
  */
 extern void task1(void);
 
-void priv_task1     (void);
-void priv_task2     (void);
+void ktask1     (void);
 
 #endif // ! PRIV_TASKS_H_
 /*

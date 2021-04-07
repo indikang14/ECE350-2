@@ -49,13 +49,15 @@ typedef unsigned __int64 uint64_t;
 
 /* UART - Register Layout Typedef */
 typedef struct {
-  __RW uint32_t UARTDR;             /*0x000 Data Register*/
-  __RW uint32_t UARTIER_DLH;	    /*0x004 Interrupt Enable and Divisor Latch High Register */
-  __RW uint32_t UART_IIR_FCR;       /*0x008 */
-  __RW uint32_t UARTLCR;	    /*0x00C Line Control Register */
-  uint32_t RESERVED_0;		    /*0x010 */
-  __RO uint32_t UARTLSR;	    /*0x014 Line Status Register */
-  __RO uint32_t UARTFR;             /*0x018 Flag Register*/
+  __RW uint32_t UARTDR;             /* 0x000 Data Register*/
+  __RW uint32_t UARTIER_DLH;	    /* 0x004 Interrupt Enable and Divisor Latch High Register */
+  __RW uint32_t UART_IIR_FCR;       /* 0x008 */
+  __RW uint32_t UARTLCR;	    	/* 0x00C Line Control Register */
+  uint32_t RESERVED_0;		    	/* 0x010 */
+  __RO uint32_t UARTLSR;	    	/* 0x014 Line Status Register */
+  __RO uint32_t UARTFR;             /* 0x018 Flag Register*/
+  uint32_t RESERVED[27];			/* 0x01C-0x084 */
+  __WO uint32_t UARTSRR;			/* 0x088 SRR Register */
 } UART_Type;
 
 typedef struct {
@@ -77,7 +79,6 @@ typedef struct {
 #define NULL                            0
 /* ECE350 END */
 
-extern void SER_Init(int n);
 extern char SER_GetChar (int n);
 extern void SER_PutChar(int n, char c);
 extern int  SER_PutStr(int n, char *s);
@@ -85,15 +86,14 @@ extern int  SER_PutStr(int n, char *s);
 void UART0_Init(void);
 void UART0_PutChar(char c);
 char UART0_GetChar (void);
-void UART0_Set_baud_rate(uint32_t baud_rate);
+void UART0_SetBaudRate(uint32_t);
 
 void JTAG_UART_PutChar(char c);
 char JTAG_UART_GetChar(void);
 
-extern void config_UART0_irq(void);
-extern int Interrupt_Rx(void);
-extern int Rx_Data_Ready(void);
-extern char Rx_Read_Data(void);
+extern int UART0_GetRxIRQStatus(void);
+extern int UART0_GetRxDataStatus(void);
+extern char UART0_GetRxData(void);
 
 extern void putc(void *p, char c);     /* call back function for printf, use JTAG UART */
 

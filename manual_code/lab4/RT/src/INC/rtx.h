@@ -131,17 +131,17 @@ extern int __SVC_0 _tsk_ls(U32 p_func, task_t *buf, int count);
  * Real-Time Task Functions - LAB4, LAB5
  *------------------------------------------------------------------------*/
 
-extern int k_tsk_create_rt(task_t *tid, TASK_RT *task, RTX_MSG_HDR *msg_hdr, U32 num_msgs);
-#define tsk_create_rt(tid, task, msg_hdr, num_msgs) _tsk_create_rt((U32)k_tsk_create_rt, tid, task, msg_hdr, num_msgs)
-extern int __SVC_0 _tsk_create_rt(U32 p_func, task_t *tid, TASK_RT *task, RTX_MSG_HDR *msg_hdr, U32 num_msgs);
+extern int k_tsk_create_rt(task_t *tid, TASK_RT *task);
+#define tsk_create_rt(tid, task) _tsk_create_rt((U32)k_tsk_create_rt, tid, task)
+extern int __SVC_0 _tsk_create_rt(U32 p_func, task_t *tid, TASK_RT *task);
 
 extern void k_tsk_done_rt(void);
 #define tsk_done_rt() _tsk_done_rt((U32)k_tsk_done_rt)
 extern void __SVC_0 _tsk_done_rt(U32 p_func);
 
-extern void k_tsk_suspend(struct timeval_rt *tv);
+extern void k_tsk_suspend(TIMEVAL *tv);
 #define tsk_suspend(tv) _tsk_suspend((U32) k_tsk_suspend, tv)
-extern void __SVC_0 _tsk_suspend(U32 p_func, struct timeval_rt *tv);
+extern void __SVC_0 _tsk_suspend(U32 p_func, TIMEVAL *tv);
 
 
 /*------------------------------------------------------------------------*

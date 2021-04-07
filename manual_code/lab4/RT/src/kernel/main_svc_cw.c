@@ -48,11 +48,6 @@
 #include "printf.h"
 #include "k_inc.h"
 #include "k_rtx.h"
-#include "interrupt.h"
-
-extern void __ch_MODE (U32 mode);
-extern void __atomic_on(void);
-extern void __atomic_off(void);
 
 void task_null (void)
 {
@@ -69,21 +64,11 @@ void task_null (void)
 int main() 
 {    
     static RTX_SYS_INFO  sys_info;
-	static RTX_TASK_INFO task_info[3];
-    char mode = 0;
+    static RTX_TASK_INFO task_info[3];
+    char mode = __get_mode();
 
-    // CMSIS system initialization
-    SystemInit();
-
-    __atomic_on();
-    SER_Init(1);  				// uart1 uses polling for output
     init_printf(NULL, putc);	// printf uses uart1 for output
-    __atomic_off();
-
-    mode = __get_mode();
     printf("mode = 0x%x\r\n", mode);
-
-    printf("TESTING DEBUGGER!");
 
     // System and Task set up by auto testing software
     if (ae_init(&sys_info, task_info, 3) != RTX_OK) {
@@ -97,8 +82,6 @@ int main()
         k_rtx_init(task_info, 3);
     }
 
-
-    interrupt_init();
     task_null();
 
     // We should never reach here!!!

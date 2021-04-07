@@ -75,11 +75,9 @@
 #define EDF                 12      /* earliest-deadline-first scheduling */
 
 #define TID_NULL            0       /* pre-defined Task ID for null task */
-#define TID_KCD             15      /* pre-defined Task ID for KCD task */
-#define TID_DISPLAY         14      /* pre-defined Task ID for DISPLAY task */
+#define TID_KCD             159     /* pre-defined Task ID for KCD task */
 #define TID_UART_IRQ        0xFF    /* reserved TID for UART IRQ handler which is not a task */
-#define TID_TIMER_IRQ       0xFE    /* reserved TID for Timer IRQ handler, which is not a task */
-#define MAX_TASKS           16      /* maximum number of tasks in the system */
+#define MAX_TASKS           160     /* maximum number of tasks in the system */
 #define KERN_STACK_SIZE     0x200   /* task kernel stack size in bytes */
 #define PROC_STACK_SIZE     0x200   /* task proc space stack size in bytes */
 
@@ -95,7 +93,6 @@
 #define DORMANT             0       /* terminated task state */
 #define READY               1       /* A ready to run task that has been executed */
 #define RUNNING             2       /* Executing */
-#define BLK_MEM             3       /* blocked on requesting memory, not used in labs 1-5 */
 #define BLK_MSG             4       /* blocked on receiving a message */
 #define SUSPENDED           5       /* Suspended task */
 
@@ -148,10 +145,10 @@ typedef unsigned char       task_t;
 /**
  * @brief Timing structure
  */
-struct timeval_rt {
+typedef struct timeval_rt {
     U32                 sec;                /**> seconds                           */
     U32                 usec;               /**> microoseconds                     */
-};
+} TIMEVAL;
 
 /**
  * @brief scheduling server structure
@@ -193,23 +190,19 @@ typedef struct rtx_task_info {
     U8                  prio;               /**> execution priority                 */
     U8                  state;              /**> task state                         */
     U8                  priv;               /**> = 0 unprivileged, =1 privileged    */
-    struct timeval_rt   tv_cpu;             /**> task execution cpu time            */
-    struct timeval_rt   tv_wall;            /**> task execution wall clock time     */
-    
     /* The following only applies to real-time tasks */
-    struct timeval_rt   p_n;                /**> period in seconds and microseconds */
-    RTX_MSG_HDR        *msg_hdr;            /**> real-time task message header      */
-    U32                 num_msgs;           /**> real-time task mailbox capacity    */
+    TIMEVAL             p_n;                /**> period in seconds and microseconds */
+    size_t              rt_mbx_size;        /**> real-time task mailbox capacity    */
 } RTX_TASK_INFO;
 
 /**
  * @brief Real-time task information structure
  */
 typedef struct task_rt {
-    struct timeval_rt   p_n;                /**> period in seconds and microseconds */
+    TIMEVAL             p_n;                /**> period in seconds and microseconds */
     void                (*task_entry)();    /**> task entry address                 */
     U16                 u_stack_size;       /**> user stack size in bytes           */
-    U8                  priv;               /**> = 0 unprivileged, =1 privileged    */
+    size_t              rt_mbx_size;        /**> mailbox size in bytes              */
 } TASK_RT;
 
 #endif // ! COMMON_H_

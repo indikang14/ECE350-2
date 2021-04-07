@@ -44,128 +44,52 @@
 /**
  * @brief: a dummy task1
  */
-void task1(void)
+void utask1(void)
 {
-    //task_t tid;
-    RTX_TASK_INFO task_info;
-    
-
-    SER_PutStr (0,"task1: entering \n\r");
-    /* do something */
-    mbx_create(0xFF);
-    //tsk_create(&tid, &task2, LOW, 0x200);  /*create a user task */
-    //tsk_get(tid, &task_info);
-    tsk_get(1, &task_info);
-    tsk_set_prio(2, LOWEST);
-    tsk_set_prio(4, MEDIUM);
-    tsk_set_prio(3, HIGH);
-
-
-    //back from user2: check mailbox
-    U8 *buf = mem_alloc(9);
-    task_t senderTID;
-    recv_msg(&senderTID, buf, 9);
-
-
-    mem_dealloc(buf);
-
-
-    size_t msg_hdr_size = sizeof(struct rtx_msg_hdr);
-     buf = mem_alloc(msg_hdr_size + 5);
-        struct rtx_msg_hdr *ptr = (void *)buf;
-        ptr->length = msg_hdr_size + 5;
-        ptr->type = DEFAULT;
-        buf += msg_hdr_size;
-        //buf = "RAPS";
-        buf[0] = 'R';
-        buf[1] = 'A';
-        buf[2] ='P'	;
-        buf[3] = 'S';
-        buf[4] = 0;
-
-        send_msg(3, (void *) ptr);
-
-
-
-        tsk_set_prio(3, HIGH); //user2 runs
-
-
-
-
-
-    tsk_yield();
-    /* terminating */
-    tsk_exit();
+	SER_PutStr(0, "utask1: entering \n\r");
+	/* do something */
+	long int x = 0;
+	int i = 0;
+	int j = 0;
+	while (1) {
+		SER_PutStr(0, "utask1: ");
+		char out_char = 'a' + i % 10;
+		for (j = 0; j < 5; j++)
+		{
+			SER_PutChar(0, out_char);
+		}
+		SER_PutStr(0, "\n\r");
+		++i;
+		for (x = 0; x < 5000000; x++)
+			; // some artifical delay
+	}
+	/* terminating */
+	// tsk_exit();
 }
 
-/**
- * @brief: a dummy task2
- */
-void task2(void)
+void utask2(void)
 {
-    SER_PutStr (0,"task2: entering \n\r");
-
-    mbx_create(0xFF);
-    size_t msg_hdr_size = sizeof(struct rtx_msg_hdr);
-    U8 *buf = mem_alloc(msg_hdr_size + 1);
-    struct rtx_msg_hdr *ptr = (void *)buf;
-    ptr->length = msg_hdr_size + 1;
-    ptr->type = DEFAULT;
-    buf += msg_hdr_size;
-    *buf = (U8) 'Z';
-    send_msg(4, (void *) ptr);
-
-    tsk_set_prio(3, LOW);//user1 runs next
-    mem_dealloc(buf);
-
-    buf = mem_alloc(13);
-    task_t senderTID;
-    recv_msg(&senderTID, buf, 13);
-
-    struct rtx_msg_hdr* temp = (struct rtx_msg_hdr*) buf;
-       //temp += sizeof(struct rtx_msg_hdr);
-       U8 * data = (U8*) temp + sizeof(struct rtx_msg_hdr);
-
-//       for(int i=0;i< 5; i++){
-//    	   data[i];
-//       }
-
-
-
-
-
-//    ptr = NULL;
-//    send_msg(4, (void *) ptr);
-
-
-
-
-
-
-
-    /* do something */
-    long int x = 0;
-    int ret_val = 10;
-    int i = 0;
-    int j = 0;
-    for (i = 1;;i++) {
-            char out_char = 'a' + i%10;
-            for (j = 0; j < 5; j++ ) {
-                SER_PutChar(0,out_char);
-            }
-            SER_PutStr(0,"\n\r");
-
-            for ( x = 0; x < 5000000; x++); // some artifical delay
-            if ( i%6 == 0 ) {
-                SER_PutStr(0,"usr_task2 before yielding cpu.\n\r");
-                ret_val = tsk_yield();
-                SER_PutStr(0,"usr_task2 after yielding cpu.\n\r");
-                printf("usr_task2: ret_val=%d\n\r", ret_val);
-            }
-        }
-    /* terminating */
-    //tsk_exit();
+	SER_PutStr(0, "utask2: entering \n\r");
+	/* do something */
+	long int x = 0;
+	int i = 0;
+	int j = 0;
+	while (1)
+	{
+		SER_PutStr(0, "utask2: ");
+		char out_char = 'A' + i % 10;
+		for (j = 0; j < 5; j++) {
+			SER_PutChar(0, out_char);
+		}
+		SER_PutStr(0, "\n\r");
+		++i;
+		for (x = 0; x < 5000000; x++)
+			; // some artifical delay
+	}
+	/* terminating */
+	// tsk_exit();
 }
+
 /*
  *===========================================================================
  *                             END OF FILE

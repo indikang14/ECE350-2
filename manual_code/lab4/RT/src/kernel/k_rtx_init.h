@@ -43,6 +43,8 @@
 #define K_RTX_INIT_H_
 
 #include "k_inc.h"
+#include "interrupt.h"
+#include "timer.h"
 
 /*
  *===========================================================================

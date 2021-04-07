@@ -46,6 +46,8 @@
 #include "k_task.h"
 #include "k_msg.h"
 #include "rtx.h"
+#include "timer.h"
+#include "printf.h"
 
 #pragma push
 #pragma arm
@@ -203,7 +205,7 @@ SVC_EXIT
 __asm void IRQ_Handler(void){
         PRESERVE8
         ARM
-        IMPORT SER_Interrupt
+        IMPORT	c_IRQ_Handler
 
         SUB     LR, LR, #4              ; Pre-adjust LR
         SRSFD   SP!, #Mode_SVC          ; Push LR_IRQ and SPSR_IRQ onto SVC mode stack
@@ -213,13 +215,7 @@ __asm void IRQ_Handler(void){
         SUB 	SP, SP, #8
         STM     SP, {SP}^		; Push SP_USR onto the kernel stack
 
-        LDR 	R4, =GIC_BASE
-        LDR 	R5, [R4, #0x0C]         ; Read the interrupt id from ICCIAR
-        STR 	R5, [R4, #0x10]         ; Write interrupt id to ICCEOIR to clear the interrupt
-        CMP 	R5, #UART_IRQ_ID        ; Compare with interrupt id for UART0_IRQ
-
-        BNE 	EXIT_IRQ                ; Exit if not recognized
-        BL 	SER_Interrupt           ; Call the uart interrupt handler for UART0 interrupt
+        BL 	c_IRQ_Handler           ; Call the uart interrupt handler for UART0 interrupt
 
 EXIT_IRQ
         LDM     SP, {SP}^               ; Restore SP_USR and R0-R12 from their saved values on the stack
@@ -229,6 +225,7 @@ EXIT_IRQ
 }
 
 #pragma pop
+
 
 void c_IRQ_Handler(void)
 {
@@ -285,6 +282,7 @@ void c_IRQ_Handler(void)
 	}
 }
 
+/*
 // modified to call the KCD task
 void SER_Interrupt(void)
 {
@@ -327,6 +325,7 @@ void SER_Interrupt(void)
   send_msg( TID_KCD, (void *)&buff );
   k_tsk_run_new();
 }
+*/
 
 /*
  *===========================================================================

@@ -51,14 +51,7 @@
  *==========================================================================
  */
 
-
-
 extern TCB *gp_current_task;
-extern BOOL kernelOwnedMemory;
-extern TCB* TCBhead;
-extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
-extern int thread_changed_event; // if a thread has created, exits, and prio changes
-extern int old_priority; // if a thread switched priority I need the previous state
 
 /*
  *===========================================================================
@@ -85,7 +78,7 @@ int  k_tsk_create       (task_t *task, void (*task_entry)(void), U8 prio, U16 st
 void k_tsk_exit         (void);
 int  k_tsk_set_prio     (task_t task_id, U8 prio);
 int  k_tsk_get          (task_t task_id, RTX_TASK_INFO *buffer);
-int  k_tsk_create_rt    (task_t *tid, TASK_RT *task, RTX_MSG_HDR *msg_hdr, U32 num_msgs);
+int k_tsk_create_rt(task_t *tid, TASK_RT *task);
 void k_tsk_done_rt      (void);
 void k_tsk_suspend      (struct timeval_rt *tv);
 

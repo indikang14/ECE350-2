@@ -26,6 +26,9 @@
 
 #include "k_HAL_CA.h"
 #include "../DE1_SoC_A9/device_a9.h"
+#include "../DE1_SoC_A9/interrupt.h"
+#include "../DE1_SoC_A9/Serial.h"
+#include "../DE1_SoC_A9/timer.h"
 
 // statically allocated initial stacks except for SVC mode
 U32 g_stacks[NUM_PRIV_MODES - 1][STACK_SZ >> 2];
@@ -36,11 +39,11 @@ U32 g_stacks[NUM_PRIV_MODES - 1][STACK_SZ >> 2];
  *****************************************************************************/
 void StackInit(void) {
 	int i = 0;
-	__set_SP_MODE((U32) (g_stacks[++i]), MODE_SYS);
-	__set_SP_MODE((U32) (g_stacks[++i]), MODE_IRQ);
-	__set_SP_MODE((U32) (g_stacks[++i]), MODE_FIQ);
-	__set_SP_MODE((U32) (g_stacks[++i]), MODE_ABT);
-	__set_SP_MODE((U32) (g_stacks[++i]), MODE_UND);
+	__set_SP_MODE((U32) (g_stacks[++i]), INIT_MODE_SYS);
+	__set_SP_MODE((U32) (g_stacks[++i]), INIT_MODE_IRQ);
+	__set_SP_MODE((U32) (g_stacks[++i]), INIT_MODE_FIQ);
+	__set_SP_MODE((U32) (g_stacks[++i]), INIT_MODE_ABT);
+	__set_SP_MODE((U32) (g_stacks[++i]), INIT_MODE_UND);
 }
 
 /**************************************************************************//**
@@ -50,8 +53,11 @@ void StackInit(void) {
  *****************************************************************************/
 
 void SystemInit(void) {
-	// 1. copy vector table , not needed for VE9
-	// 2. TODO set up system clocks for devices, not needed for lab1 or lab2
+	GIC_Enable();
+	GIC_EnableIRQ(UART0_Rx_IRQ_ID);
+	GIC_EnableIRQ(HPS_TIMER0_IRQ_ID);
+	GIC_EnableIRQ(HPS_TIMER1_IRQ_ID);
+	GIC_EnableIRQ(A9_TIMER_IRQ_ID);
 }
 /*
  *===========================================================================

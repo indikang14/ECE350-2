@@ -51,12 +51,12 @@
  *****************************************************************************/
 
 int ae_init(RTX_SYS_INFO *sys_info, RTX_TASK_INFO *task_info, int num_tasks) {
-    if (ae_set_sys_info(sys_info) != RTX_OK) {
-        return RTX_ERR;
-    }
+	if (ae_set_sys_info(sys_info) != RTX_OK) {
+		return RTX_ERR;
+	}
 
-    ae_set_task_info(task_info, num_tasks);
-    return RTX_OK;
+	ae_set_task_info(task_info, num_tasks);
+	return RTX_OK;
 }
 
 /**************************************************************************//**
@@ -66,30 +66,30 @@ int ae_init(RTX_SYS_INFO *sys_info, RTX_TASK_INFO *task_info, int num_tasks) {
  *
  *****************************************************************************/
 int ae_set_sys_info(RTX_SYS_INFO *sys_info) {
-    if (sys_info == NULL) {
-        return RTX_ERR;
-    }
+	if (sys_info == NULL) {
+		return RTX_ERR;
+	}
 
-    // Scheduling sys info set up, only do DEFAULT in lab2
-    sys_info->sched = DEFAULT;
+	// Scheduling sys info set up, only do DEFAULT in lab2
+	sys_info->sched = DEFAULT;
 
-    /************* NOT USED in LAB2 ********************
-    struct timeval_rt budget;
-    struct timeval_rt period;
+	/************* NOT USED in LAB2 ********************
+	 struct timeval_rt budget;
+	 struct timeval_rt period;
 
-    budget.sec = 0;
-    budget.usec = MIN_RTX_QTM * 10;
+	 budget.sec = 0;
+	 budget.usec = MIN_RTX_QTM * 10;
 
-    period.sec = 0;
-    period.usec = MIN_RTX_QTM * 100;
+	 period.sec = 0;
+	 period.usec = MIN_RTX_QTM * 100;
 
 
-    sys_info->rtx_time_qtm = 10 * MIN_RTX_QTM;
+	 sys_info->rtx_time_qtm = 10 * MIN_RTX_QTM;
 
-    sys_info->server.b_n = budget;
-    sys_info->server.p_n = period;
-    ****************************************************/
-    return RTX_OK;
+	 sys_info->server.b_n = budget;
+	 sys_info->server.p_n = period;
+	 ****************************************************/
+	return RTX_OK;
 }
 
 /**************************************************************************//**
@@ -101,24 +101,20 @@ int ae_set_sys_info(RTX_SYS_INFO *sys_info) {
 
 void ae_set_task_info(RTX_TASK_INFO *tasks, int num_tasks) {
 
-    if (tasks == NULL) {
-        return;
-    }
+	if (tasks == NULL) {
+		return;
+	}
 
-    for (int i = 0; i < num_tasks; i++ ) {
-        tasks[i].u_stack_size = 0x0;
-        tasks[i].prio = LOW;
-        tasks[i].priv = 1;
-    }
-    tasks[0].ptask = &priv_task1;
-    tasks[1].ptask = &priv_task2;
-    tasks[2].ptask = &task2;
-    tasks[2].priv = 0;
-
-    tasks[0].prio = LOWEST;
-    tasks[1].prio = MEDIUM;
-    tasks[2].prio = LOW;
-    return;
+	for (int i = 0; i < num_tasks; i++) {
+		tasks[i].u_stack_size = 0x200;
+		tasks[i].prio = 100;
+		tasks[i].priv = 0;
+	}
+	tasks[0].priv = 1;
+	tasks[0].ptask = &ktask1;
+	tasks[1].ptask = &utask1;
+	tasks[2].ptask = &utask2;
+	return;
 }
 
 /* only used in LAB1 */

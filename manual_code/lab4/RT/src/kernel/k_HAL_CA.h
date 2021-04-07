@@ -81,6 +81,12 @@
 #define MODE_UND        0x1B
 #define MODE_SYS        0x1F
 
+#define INIT_MODE_FIQ   0xD1
+#define INIT_MODE_IRQ   0xD2
+#define INIT_MODE_ABT   0xD7
+#define INIT_MODE_UND   0xDB
+#define INIT_MODE_SYS   0xDF
+
 /*
  *===========================================================================
  *                             TYPEDEFS
