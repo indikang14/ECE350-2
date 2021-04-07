@@ -109,13 +109,14 @@ mbx_metamsg* getMetaMessage(U8* mm_p, CQ *circq) {
 int cq_enqueue(mbx_metamsg *metamsg, CQ *receiver) {
     if (receiver->memblock_p == NULL) return -1; //mailbox not created
     //error if not enough space
-    U64 bytesrequired = sizeof(mbx_metamsg) + metamsg->msg.header.length - sizeof(RTX_MSG_HDR);
+    U64 bytesrequired_notaligned = sizeof(mbx_metamsg) + metamsg->msg.header.length - sizeof(RTX_MSG_HDR);
+    U64 bytesrequired = bytesrequired_notaligned % 4 == 0 ? bytesrequired_notaligned : (bytesrequired_notaligned / 4 + 1) * 4;
     printf("enqueue -- bytes required: %lu\n", bytesrequired);
     if (bytesrequired > receiver->remainingSize) return -1; //not enough space in mailbox for new message
     if (!cq_isEmpty(receiver)) {
         //get tail, add bytes corresponding to size of tail metadata + message
         mbx_metamsg *tail = getMetaMessage((U8 *) receiver->tail, receiver);
-        U8 *temp = (U8 *) receiver->tail + sizeof(mbx_metamsg) + tail->msg.header.length - sizeof(RTX_MSG_HDR);
+        U8 *temp = (U8 *) receiver->tail + sizeof(mbx_metamsg) + (tail->msg.header.length % 4 == 0 ? tail->msg.header.length : (tail->msg.header.length / 4 + 1) * 4) - sizeof(RTX_MSG_HDR);
         kernelOwnedMemory = 1;
         k_mem_dealloc(tail);
         kernelOwnedMemory = 0;
@@ -184,7 +185,7 @@ mbx_metamsg* cq_dequeue() {
     } else { //more than one element in cq
         //move front to next message in mailbox
         mbx_metamsg *head = getMetaMessage((U8 *) gp_current_task->mbx_cq.head, &(gp_current_task->mbx_cq));
-        U64 bytesfreed = sizeof(mbx_metamsg) + head->msg.header.length - sizeof(RTX_MSG_HDR);
+        U64 bytesfreed = sizeof(mbx_metamsg) + (head->msg.header.length % 4 == 0 ? head->msg.header.length : (head->msg.header.length / 4 + 1) * 4) - sizeof(RTX_MSG_HDR);
         kernelOwnedMemory = 1;
         k_mem_dealloc(head);
         kernelOwnedMemory = 0;
@@ -199,20 +200,21 @@ int k_mbx_create(size_t size) {
     printf("k_mbx_create: size = %d\r\n", size);
 #endif /* DEBUG_0 */
 
-    //check that size > min_size
+    size_t newsize = size % 4 == 0 ? size : (size / 4 + 1) * 4;
+	//check that size > min_size
     if (size < MIN_MBX_SIZE) return -1;
     //check that calling task doesn't already have a mailbox
     if (gp_current_task->mbx_cq.memblock_p != NULL) return -1;
 
     //allocate memory for mailbox
     kernelOwnedMemory = 1;
-    U8 *p_mbx = k_mem_alloc(size);
+    U8 *p_mbx = k_mem_alloc(newsize);
     kernelOwnedMemory = 0;
     //check that allocation was successful
     if (p_mbx == NULL) return -1;
     gp_current_task->mbx_cq.memblock_p = p_mbx;
-    gp_current_task->mbx_cq.size = size;
-    gp_current_task->mbx_cq.remainingSize = size;
+    gp_current_task->mbx_cq.size = newsize;
+    gp_current_task->mbx_cq.remainingSize = newsize;
     return 0;
 }
 
@@ -244,35 +246,7 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
 //    if(temp->mbx_cq == NULL) {
 //    	return RTX_ERR;
 //    }
-    //if receiving task state is blocked, unblock it and preempt the scheduler if prio is higher than current task
-    if(temp->state == BLK_MSG) {
-
-
-    	thread_changed_p = temp;
-    	thread_changed_event = TCREATED;
-
-    	TCB* p_tcb_old = gp_current_task;
-
-    	gp_current_task = scheduler();
-
-    	    printf("address of current task: 0x%x \r\n", gp_current_task);
-
-    	    if ( gp_current_task == NULL  ) {
-    	    	gp_current_task = p_tcb_old;        // revert back to the old task
-    	    	//return;
-    	    }
-
-    	    // at this point, gp_current_task != NULL and p_tcb_old != NULL
-    	    if (gp_current_task != p_tcb_old) {
-    	    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
-    	        p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
-    	        //g_num_active_tasks--;				//number of active tasks decreases
-    	        k_tsk_switch(p_tcb_old);            // switch stacks
-    	    }
-
-
-
-    }
+    
 
     int sizeOfData =  (readHdr->length - sizeof(RTX_MSG_HDR) );
 
@@ -300,9 +274,39 @@ int k_send_msg(task_t receiver_tid, const void *buf) {
             } else {
             	k_mem_dealloc(metamsg1);
                 printf("enqueue successful\n");
-                return RTX_OK;
             }
+	//if receiving task state is blocked, unblock it and preempt the scheduler if prio is higher than current task
+    if(temp->state == BLK_MSG) {
 
+
+    	thread_changed_p = temp;
+    	thread_changed_event = TCREATED;
+
+    	TCB* p_tcb_old = gp_current_task;
+
+    	gp_current_task = scheduler();
+
+    	    printf("address of current task: 0x%x \r\n", gp_current_task);
+
+    	    if ( gp_current_task == NULL  ) {
+    	    	gp_current_task = p_tcb_old;        // revert back to the old task
+    	    	//return;
+    	    }
+
+    	    // at this point, gp_current_task != NULL and p_tcb_old != NULL
+    	    if (gp_current_task != p_tcb_old) {
+    	    	gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+    	        p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
+    	        //g_num_active_tasks--;				//number of active tasks decreases
+    	        k_tsk_switch(p_tcb_old);            // switch stacks
+			} else {
+				temp->state = READY;
+    	    }
+
+
+
+    }
+	return RTX_OK;
 }
 
 int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
@@ -331,7 +335,7 @@ int k_recv_msg(task_t *sender_tid, void *buf, size_t len) {
         TCB* check = gp_current_task;
         gp_current_task->state = RUNNING;
         k_tsk_switch(p_tcb_old);
-        return -1;
+        metamsg = cq_dequeue();
     }
 
     if (metamsg->msg.header.length  > len) {
