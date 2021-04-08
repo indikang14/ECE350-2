@@ -430,6 +430,12 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         mbx_cq.remainingSize = 0;
         mbx_cq.memblock_p = NULL;
         newTCB->mbx_cq = mbx_cq;
+        //if task is real time then create mailbox with byte size in rtx task info
+        if(newTCB->prio == PRIO_RT && newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
+    		if(k_mbx_create(newTCB->TcbInfo->rt_mbx_size) == RTX_ERR) {
+    				return RTX_ERR;
+    			}
+        }
 
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
