@@ -427,6 +427,12 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         mbx_cq.remainingSize = 0;
         mbx_cq.memblock_p = NULL;
         newTCB->mbx_cq = mbx_cq;
+        //if task is real time then create mailbox with byte size in rtx task info
+        if(newTCB->prio == PRIO_RT && newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
+    		if(k_mbx_create(newTCB->TcbInfo->rt_mbx_size) == RTX_ERR) {
+    				return RTX_ERR;
+    			}
+        }
 
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
@@ -923,7 +929,7 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
       return RTX_ERR;
     }
 
-    // check that the current task is has edit privledges
+    // check that the current task is has edit priviledges
     if (gp_current_task->priv == 0 && traverse->priv == 1) {
       return RTX_ERR;
     }
@@ -995,7 +1001,140 @@ int k_tsk_ls(task_t *buf, int count){
 
 int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 {
-    return 0;
+
+
+	//error checking...
+	if(task->p_n.sec == 0 && task->p_n.usec == 0){
+		return RTX_ERR;
+	}
+
+	if( task->p_n.usec % 500 != 0 ) {
+		return RTX_ERR;
+	}
+
+	if(g_num_active_tasks > MAX_TASKS) {
+		return RTX_ERR;
+	}
+
+	if(task->u_stack_size < PROC_STACK_SIZE) {
+		return RTX_ERR;
+	}
+
+	RTX_TASK_INFO* newTaskInfo;
+		TCB* newTaskBlock;
+		int taskFound = 0;//flag to indicate TCB created
+
+		TCB* traverse = TCBhead;
+
+		//Linked List houses all the active TCBS
+		while(taskFound == 0  ) {
+
+			printf("address of traverse 0x%x \r\n", traverse);
+			printf("traverse next Tid is: %d \r\n",traverse->next->tid );
+			printf("traverse Tid is: %d \r\n",traverse->tid );
+
+			//if rtx_init is called with no num_tasks parameter
+
+				if(traverse == NULL ) {
+
+					*tid = 1;
+					newTaskBlock =  &g_tcbs[*tid];
+					newTaskInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+					newTaskBlock->TcbInfo = newTaskInfo;
+					TCBhead = newTaskBlock;
+					TCBhead->next = NULL;
+					taskFound = 1;
+				}
+
+			//if you find an unused TCB at the end of the linked  list
+				else if (traverse->next == NULL) {
+					printf("free space at end of list!");
+					*tid = traverse->tid +1;
+					printf("task(tid): %d", *tid);
+					newTaskBlock =  &g_tcbs[*tid];
+					printf("address of new TCB is: 0x%x \r\n ", newTaskBlock);
+					//check if vacant spot in array already had a dormant tcb
+					if(newTaskBlock->state != DORMANT) {
+						printf("allocating memory for task info struct");
+						newTaskInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+						newTaskBlock->TcbInfo = newTaskInfo;
+					}
+					traverse->next = newTaskBlock;
+					newTaskBlock->next = NULL;
+					taskFound = 1;
+
+				}
+
+			//if you find a dormant or unused TCB in between two active TCBs...
+				else if((traverse->next->tid - traverse->tid) > 1) {
+					printf("there is space between two TCBs!");
+
+					*tid =   traverse->tid +1;
+					printf("task(tid): %d", *tid);
+					newTaskBlock = &g_tcbs[*tid];
+					printf("address of new TCB is: 0x%x \r\n ", newTaskBlock);
+					newTaskInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+					newTaskBlock->TcbInfo = newTaskInfo;
+					newTaskBlock->next = traverse->next;
+					traverse->next = newTaskBlock;
+					taskFound = 1;
+				}
+
+				else {
+
+				traverse = traverse -> next;
+				}
+		}
+
+
+		// initialize TCB structure
+		newTaskBlock->prio = PRIO_RT;
+		newTaskBlock->state = READY;
+		newTaskBlock->priv = 0;
+		newTaskBlock->tid = (U8) *tid;
+		newTaskBlock->TcbInfo->tid = *tid;
+		newTaskBlock->TcbInfo->u_stack_size = task->u_stack_size;
+		newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
+		newTaskBlock->TcbInfo->ptask = task->task_entry;
+		newTaskBlock->TcbInfo->rt_mbx_size = task->rt_mbx_size;
+		newTaskBlock->TcbInfo->p_n = task->p_n;
+
+
+
+		//initializing mailbox
+			CQ mbx_cq;
+			        mbx_cq.head = NULL;
+			        mbx_cq.tail = NULL;
+			        mbx_cq.size = 0;
+			        mbx_cq.remainingSize = 0;
+			        mbx_cq.memblock_p = NULL;
+			        newTaskBlock->mbx_cq = mbx_cq;
+
+			        // allocating space for mailbox
+		if(task->rt_mbx_size > 0 && task->rt_mbx_size > MIN_MBX_SIZE ) {
+			if(k_mbx_create(task->rt_mbx_size) == RTX_ERR) {
+				return RTX_ERR;
+			}
+		}
+
+		//increment number of active tasks
+		if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {
+			g_num_active_tasks++;
+		}
+
+		thread_changed_p = newTaskBlock; // if a thread has created, exits, and prio changes
+		printf("address of created task: 0x%x \r\n",thread_changed_p );
+		thread_changed_event = TCREATED;
+
+				//call new task to run
+		 if (k_tsk_run_new() != RTX_OK) {
+			 return RTX_ERR;
+		 }
+
+
+
+	return RTX_OK;
+
 }
 
 void k_tsk_done_rt(void) {
