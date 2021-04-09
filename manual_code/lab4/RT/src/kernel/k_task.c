@@ -53,10 +53,7 @@
 #include "k_task.h"
 #include "k_rtx.h"
 #include "kcd_task.h"
-
-#ifdef DEBUG_0
 #include "printf.h"
-#endif /* DEBUG_0 */
 
 /*
  *==========================================================================
@@ -1005,6 +1002,42 @@ void k_tsk_done_rt(void) {
 #ifdef DEBUG_0
     printf("k_tsk_done: Entering\r\n");
 #endif /* DEBUG_0 */
+
+    //1. reset calling task's user stack to starting address
+    //+
+    //2. reset calling task's program counter on wake-up to 'task_entry'
+
+    //dealloc user stack (kernel stack will be overwritten below)
+    kernelOwnedMemory = 1;
+	k_mem_dealloc((U8 *)gp_current_task->TcbInfo->u_stack_hi - gp_current_task->TcbInfo->u_stack_size);
+	kernelOwnedMemory = 0;
+	//now it's as if we're creating a new task, with all the overhead data structures already set up
+    k_tsk_create_new(gp_current_task->TcbInfo, gp_current_task, gp_current_task->tid);
+
+
+    //3. check deadline
+    BOOL deadlineMet = TRUE; //TEMP; compare task deadline with current time on the a9 timer?
+
+    //3a. if deadline met, set task to SUSPENDED, then switch tasks
+    if (deadlineMet == TRUE) {
+    	//assumption: the scheduler will always return a different task.
+
+    	//TODO: increment jobNumber
+    	gp_current_task->state = SUSPENDED;
+    	TCB *p_tcb_old = gp_current_task;
+		gp_current_task = scheduler();
+		gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+		k_tsk_switch(p_tcb_old);            // switch stacks
+    }
+    //3b. if deadline missed, send error message to UART port (putty), set state to ready, then switch tasks
+    else {
+    	U32 jobNumber = 0; //TEMP; need to keep track of this somewhere
+    	char strbuff[50];
+    	sprintf(strbuff, "Job %u of task %u missed its deadline", jobNumber, (U32) gp_current_task->tid);
+    	SER_PutStr(1, strbuff);
+    	//TODO: increment jobNumber
+    	k_tsk_run_new();
+    }
     return;
 }
 
