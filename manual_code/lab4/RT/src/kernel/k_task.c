@@ -146,6 +146,9 @@ The memory map of the OS image may look like the following:
 TCB * heap[MAX_TASKS];
 int q_size = 0;
 int initialized = 0;
+SUSPEND_INFO * suspended_tasks[MAX_TASKS];
+int total_suspended_tasks = 0;
+
 //priority_queue * global_q = NULL;
 
 // typedef struct tcb {
@@ -1158,7 +1161,7 @@ void k_tsk_done_rt(void) {
     BOOL deadlineMet = TRUE; //TEMP; compare task deadline with current time on the a9 timer?
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
-    if (deadlineMet == TRUE) {
+    if (deadlineMet == 	 TRUE) {
     	//assumption: the scheduler will always return a different task.
 
     	//TODO: increment jobNumber
@@ -1185,6 +1188,60 @@ void k_tsk_suspend(TIMEVAL *tv)
 #ifdef DEBUG_0
     printf("k_tsk_suspend: Entering\r\n");
 #endif /* DEBUG_0 */
+    // empty time? return
+    if (tv->sec == 0 && tv->usec == 0) {
+    	return;
+    }
+    // if not multiple of 500, return
+    if (tv->usec % 500 != 0) {
+    	return;
+    }
+
+    int current_time = timer_get_current_val(2);
+
+    SUSPEND_INFO* new_sus;
+    new_sus->task = gp_current_task;
+    if(total_suspended_tasks == 0) {
+    	// timer is free for use
+    	config_a9_timer(tv->usec + tv->sec*10^6,0,1,199);
+    	tv->sec = 0;
+    	tv->usec = 0;
+    } else if (current_time <= tv->usec + tv->sec*10^6) {
+    	// timer is being used for shorter task :)
+    	int new_time =  tv->usec + tv->sec*10^6 - current_time;
+    	tv->sec = new_time/(10^6);
+    	tv->usec = new_time % (10^6);
+    } else {
+    	// timer is being used for a longer task :p
+    	int time_diff =  current_time - tv->usec + tv->sec*10^6;
+    	int new_time;
+    	for (int i = 0; i < total_suspended_tasks; i++) {
+    		new_time = time_diff + suspended_tasks[i]->time->sec*(10^6) + suspended_tasks[i]->time->usec;
+    		suspended_tasks[i]->time->sec = new_time/(10^6);
+    		suspended_tasks[i]->time->usec = new_time%(10^6);
+    	}
+    	config_a9_timer(tv->usec + tv->sec*10^6,0,1,199);
+    	tv->sec = 0;
+    	tv->usec = 0;
+    }
+
+    new_sus->time = tv;
+    suspended_tasks[total_suspended_tasks] = new_sus;
+    total_suspended_tasks++;
+
+    TCB* p_tcb_old;
+
+    p_tcb_old = gp_current_task;
+    p_tcb_old->state = SUSPENDED;
+
+    thread_changed_event = TEXITED;
+    thread_changed_p = p_tcb_old;
+
+    gp_current_task = scheduler();
+
+    gp_current_task->state = RUNNING;
+    k_tsk_switch(p_tcb_old);
+
     return;
 }
 
