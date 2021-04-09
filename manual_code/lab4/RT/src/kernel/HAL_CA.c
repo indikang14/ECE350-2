@@ -267,7 +267,46 @@ void c_IRQ_Handler(void)
 	}
 	else if(interrupt_ID == A9_TIMER_IRQ_ID)
 	{
+		int i = 0;
+		int next_time = 0;
+
+		// remove and unsuspend tasks
+		while (i < total_suspended_tasks) {
+			if (suspended_tasks[i]->time->sec <= 0 && suspended_tasks[i]->time->usec <= 0) {
+				// unsuspend
+				suspended_tasks[i]->task->state = READY;
+				thread_changed_event = TCREATED;
+				thread_changed_p = suspended_tasks[i]->task;
+				gp_current_task = scheduler();
+
+				// remove from list
+				suspended_tasks[i] = suspended_tasks[total_suspended_tasks];
+				total_suspended_tasks--;
+			} else {
+				// find shortest suspend
+				if (next_time == 0) {
+					next_time = suspended_tasks[i]->time->sec*(10^6)+suspended_tasks[i]->time->usec;
+				} else if (next_time > suspended_tasks[i]->time->sec*(10^6)+suspended_tasks[i]->time->usec) {
+					next_time = suspended_tasks[i]->time->sec*(10^6)+suspended_tasks[i]->time->usec;
+				}
+				i++;
+			};
+		};
+
+		// set new timer and decrease the time remaining for all tasks
+		if (total_suspended_tasks > 0) {
+			config_a9_timer(next_time,0,1,199);
+			int new_time;
+			for (int i = 0; i < total_suspended_tasks; i++) {
+			    new_time = suspended_tasks[i]->time->sec*(10^6) + suspended_tasks[i]->time->usec - next_time;
+			    suspended_tasks[i]->time->sec = next_time/(10^6);
+			    suspended_tasks[i]->time->usec = next_time%(10^6);
+			}
+		}
+
 		timer_clear_irq(2);
+		gp_current_task->state = RUNNING;
+		k_tsk_run_new();
 	}
 	else
 	{
