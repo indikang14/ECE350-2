@@ -374,3 +374,51 @@ int k_mbx_ls(task_t *buf, int count) {
 #endif /* DEBUG_0 */
     return 0;
 }
+
+int k_recv_msg_nb(task_t *tid, void *buf, size_t len) {
+#ifdef DEBUG_0
+    printf("k_recv_msg_nb: sender_tid  = 0x%x, buf=0x%x, len=%d\r\n", sender_tid, buf, len);
+#endif /* DEBUG_0 */
+
+    // if no mailbox created or null buffer
+    if (buf == NULL || gp_current_task->mbx_cq.memblock_p == NULL) return -1;
+
+    TCB* p_tcb_old;
+
+    mbx_metamsg *metamsg = cq_dequeue();
+
+    if (metamsg == NULL) { // mailbox is empty
+        return 0;
+    }
+
+    if (metamsg->msg.header.length  > len) {
+        // not big enough buffer
+        kernelOwnedMemory = 1;
+        k_mem_dealloc(metamsg);
+        kernelOwnedMemory = 0;
+        return -1;
+    }
+
+    RTX_MSG_HDR * header = (RTX_MSG_HDR *) buf ;
+    header->length = metamsg->msg.header.length;
+    header->type = metamsg->msg.header.type;
+
+    if (tid != NULL) {
+        *tid = metamsg->senderTID;
+    }
+
+    U8 * data = (U8 *) buf + sizeof(RTX_MSG_HDR);
+
+    for (int i = 0; i < metamsg->msg.header.length - sizeof(RTX_MSG_HDR); i++) {
+        data[i] = metamsg->msg.data[i];
+
+    }
+
+    kernelOwnedMemory = 1;
+    k_mem_dealloc(metamsg);
+    kernelOwnedMemory = 0;
+
+    return 0;
+}
+
+

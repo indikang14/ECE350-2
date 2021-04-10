@@ -143,6 +143,11 @@ int initialized = 0;
 
 TCB * heap[MAX_TASKS];
 int q_size = 0;
+int initialized = 0;
+SUSPEND_INFO * suspended_tasks[MAX_TASKS];
+int total_suspended_tasks = 0;
+
+//priority_queue * global_q = NULL;
 
 
 TCB * rt_heap[MAX_TASKS];
@@ -1307,7 +1312,7 @@ void k_tsk_done_rt(void) {
     BOOL deadlineMet = TRUE; //TEMP; compare task deadline with current time on the a9 timer?
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
-    if (deadlineMet == TRUE) {
+    if (deadlineMet == 	 TRUE) {
     	//assumption: the scheduler will always return a different task.
 
     	//TODO: increment jobNumber
@@ -1334,6 +1339,37 @@ void k_tsk_suspend(TIMEVAL *tv)
 #ifdef DEBUG_0
     printf("k_tsk_suspend: Entering\r\n");
 #endif /* DEBUG_0 */
+    // empty time? return
+    if (tv->sec == 0 && tv->usec == 0) {
+    	return;
+    }
+    // if not multiple of 500, return
+    if (tv->usec % 500 != 0) {
+    	return;
+    }
+
+    int current_time = timer_get_current_val(2);
+
+    SUSPEND_INFO* new_sus;
+    new_sus->task = gp_current_task;
+    new_sus->time = tv;
+    suspended_tasks[total_suspended_tasks] = new_sus;
+
+    total_suspended_tasks++;
+
+    TCB* p_tcb_old;
+
+    p_tcb_old = gp_current_task;
+    p_tcb_old->state = SUSPENDED;
+
+    thread_changed_event = TEXITED;
+    thread_changed_p = p_tcb_old;
+
+    gp_current_task = scheduler();
+
+    gp_current_task->state = RUNNING;
+    k_tsk_switch(p_tcb_old);
+
     return;
 }
 

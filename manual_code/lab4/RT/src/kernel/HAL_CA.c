@@ -260,11 +260,15 @@ void c_IRQ_Handler(void)
 	{
 
 		timer_clear_irq(1);
+		gp_current_task->state = RUNNING;
+		k_tsk_run_new();
 	}
 	else if(interrupt_ID == A9_TIMER_IRQ_ID)
 	{
-                
+
+
 		timer_clear_irq(2);
+
 	}
 	else
 	{

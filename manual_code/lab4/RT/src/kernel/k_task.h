@@ -50,13 +50,19 @@
  *                            GLOBAL VARIABLES
  *==========================================================================
  */
-
+typedef struct suspend_info {
+	struct suspend_info *next;
+    TCB *task;
+    TIMEVAL *time;
+} SUSPEND_INFO;
 extern TCB *gp_current_task;
 extern BOOL kernelOwnedMemory;
 extern TCB* TCBhead;
 extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
 extern int thread_changed_event; // if a thread has created, exits, and prio changes
 extern int old_priority; // if a thread switched priority I need the previous state
+extern SUSPEND_INFO * suspended_tasks[MAX_TASKS];
+extern int total_suspended_tasks;
 
 /*
  *===========================================================================
