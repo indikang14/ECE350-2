@@ -143,7 +143,7 @@ int initialized = 0;
 
 TCB * heap[MAX_TASKS];
 int q_size = 0;
-int initialized = 0;
+//int initialized = 0;
 SUSPEND_INFO * suspended_tasks[MAX_TASKS];
 int total_suspended_tasks = 0;
 
@@ -165,8 +165,13 @@ TCB * get_highest_priority( void );
 void heapify( int i, int mode );
 
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
-char * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
-int old_priority = NULL; // if a thread switched priority I need the previous state 
+int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
+int old_priority = NULL; // if a thread switched priority I need the previous stateTCB * thread_changed_p = NULL
+unsigned int global_clk = 0;
+
+ //thread_changed_p = NULL; // if a thread has created, exits, and prio changes
+ //thread_changed_event = NULL; // if a thread has created, exits, and prio changes
+ //old_priority = NULL; // if a thread switched priority I need the previous state
 
 // note: scheduler is called when task is 
 TCB *scheduler(void)
@@ -193,11 +198,11 @@ TCB *scheduler(void)
 
         if ( thread_changed_event != NULL ) {
 
-            if ( thread_changed_event == "CREATED" ) {
+            if ( thread_changed_event == TCREATED ) {
                 enqueue( thread_changed_p );
-            } else if ( thread_changed_event == "EXITED" ) {
+            } else if ( thread_changed_event == TEXITED ) {
                 remove( thread_changed_p );
-            } else if ( thread_changed_event == "PRIORITY" ) {
+            } else if ( thread_changed_event == TPRIORITY ) {
                 changePriority( thread_changed_p );
             }
 
@@ -371,8 +376,8 @@ int moveUp(int i, int mode) {
 // for RT tasks the deadline is the curr_time % longest_deadline
 void compute_next_job_deadline( TCB * p ) {
 
-    unsigned int seconds_in_usec = p->TcbInfo->p_n->tv_sec * 1000000;
-    unsigned int usec = p->TcbInfo->p_n->tv_usec;
+    unsigned int seconds_in_usec = p->TcbInfo->p_n.sec * 1000000;
+    unsigned int usec = p->TcbInfo->p_n.usec;
 
     if ( p->next_job_deadline == 0 ) {
 
@@ -582,11 +587,16 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         mbx_cq.memblock_p = NULL;
         newTCB->mbx_cq = mbx_cq;
         //if task is real time then create mailbox with byte size in rtx task info
-        if(newTCB->prio == PRIO_RT && newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
-    		if(k_mbx_create(newTCB->TcbInfo->rt_mbx_size) == RTX_ERR) {
-    				return RTX_ERR;
-    			}
+        if(newTCB->prio == PRIO_RT) {
+        	newTCB->next_job_deadline = 0;
+        	 if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
+        	    		if(k_mbx_create(newTCB->TcbInfo->rt_mbx_size) == RTX_ERR) {
+        	    				return RTX_ERR;
+        	    			}
+
+        	        }
         }
+
 
 
         if (k_tsk_create_new(newTCB->TcbInfo, newTCB , newTCB->tid) == RTX_OK) { // use RTXInfo pointer from TCB struct as parameter
@@ -602,16 +612,16 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     //initialize KCD task
     if(oldTCB->next == NULL) {
-    	newTCB = &g_tcbs[TID_KCD];
+    	newTCB = &g_tcbs[15];
     	 newTCB->next = NULL; //initialize next pointer  of current task
-    	 newTCB->tid = TID_KCD;
+    	 newTCB->tid = 15;
     	 oldTCB->next = newTCB;
 
     	 RTX_TASK_INFO* kcdInfo;
     	 kcdInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
     	 newTCB->TcbInfo = kcdInfo;
     	 // initialize TCB structure
-    	 	newTCB->prio = PRIO_RT;
+    	 	newTCB->prio = HIGH;
     	 	newTCB->state = READY;
     	 	newTCB->priv = 0;
     	 	newTCB->TcbInfo->state = READY;
@@ -637,7 +647,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     }
 
 
-
+    oldTCB = TCBhead;
     while(oldTCB!= NULL) {
     	printf("PRINTING LIST OF TASKS CURRENTLY IN GTCBS:  \r\n");
     	printf("address of task: 0x%x and task prio is: %d \r\n", oldTCB, oldTCB->prio);
@@ -645,7 +655,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     }
 
-    oldTCB = TCBhead;
+
     //scheduler();
     return RTX_OK;
 }
@@ -871,7 +881,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 
     }
 
-    if(prio!= HIGH && prio!= LOW && prio!= LOWEST && prio!= MEDIUM) {
+    if(prio < 1 || prio > 254 ) {
     	return RTX_ERR;
     }
 
@@ -1071,7 +1081,7 @@ int k_tsk_set_prio(task_t task_id, U8 prio)
     TCB* traverse = TCBhead;
 
     // check valid prio
-    if (prio != HIGH && prio != MEDIUM && prio != LOW && prio != LOWEST ) {
+    if (prio < 1 || prio > 254 ) {
       return RTX_ERR;
     }
 
@@ -1251,7 +1261,10 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 		newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 		newTaskBlock->TcbInfo->ptask = task->task_entry;
 		newTaskBlock->TcbInfo->rt_mbx_size = task->rt_mbx_size;
-		newTaskBlock->TcbInfo->p_n = task->p_n;
+		newTaskBlock->TcbInfo->p_n.sec = task->p_n.sec;
+		newTaskBlock->TcbInfo->p_n.usec = task->p_n.usec;
+		newTaskBlock->next_job_deadline = 0;
+
 
 
 

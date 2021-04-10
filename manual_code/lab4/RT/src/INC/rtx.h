@@ -44,7 +44,7 @@
 #define _RTX_H_
 
 #include "common.h"
-#include "common_ext.h"
+//#include "common_ext.h"
 
 /*
  *===========================================================================

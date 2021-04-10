@@ -63,6 +63,7 @@ extern int thread_changed_event; // if a thread has created, exits, and prio cha
 extern int old_priority; // if a thread switched priority I need the previous state
 extern SUSPEND_INFO * suspended_tasks[MAX_TASKS];
 extern int total_suspended_tasks;
+extern unsigned int global_clk;
 
 /*
  *===========================================================================
