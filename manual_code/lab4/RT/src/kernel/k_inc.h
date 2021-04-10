@@ -92,7 +92,7 @@ typedef struct tcb {
     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
     U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
     RTX_TASK_INFO *TcbInfo;
-    U8          next_job_deadline; /** only for RT tasks **/
+    U64          next_job_deadline; /** only for RT tasks **/
     CQ mbx_cq;
 } TCB;
 
@@ -122,7 +122,7 @@ extern TCB* TCBhead;
 extern TCB * thread_changed_p; // if a thread has created, exits, and prio changes
 extern int thread_changed_event; // if a thread has created, exits, and prio changes
 extern int old_priority; // if a thread switched priority I need the previous state
-extern unsigned int global_clk;
+extern U64 global_clk;
 
 // TCBs are statically allocated inside the OS image
 extern TCB g_tcbs[MAX_TASKS];

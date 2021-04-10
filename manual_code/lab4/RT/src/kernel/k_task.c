@@ -167,7 +167,7 @@ void heapify( int i, int mode );
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
 int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
 int old_priority = NULL; // if a thread switched priority I need the previous stateTCB * thread_changed_p = NULL
-unsigned int global_clk = 0;
+U64 global_clk = 0;
 
  //thread_changed_p = NULL; // if a thread has created, exits, and prio changes
  //thread_changed_event = NULL; // if a thread has created, exits, and prio changes
@@ -1264,8 +1264,7 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 		newTaskBlock->TcbInfo->p_n.sec = task->p_n.sec;
 		newTaskBlock->TcbInfo->p_n.usec = task->p_n.usec;
 		newTaskBlock->next_job_deadline = 0;
-
-
+		newTaskBlock->TcbInfo->rt_jobNumber = 0;
 
 
 		//initializing mailbox
@@ -1322,13 +1321,13 @@ void k_tsk_done_rt(void) {
 
 
     //3. check deadline
-    BOOL deadlineMet = TRUE; //TEMP; compare task deadline with current time on the a9 timer?
+    BOOL deadlineMet = gp_current_task->next_job_deadline > global_clk ? TRUE : FALSE;
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
     if (deadlineMet == 	 TRUE) {
     	//assumption: the scheduler will always return a different task.
 
-    	//TODO: increment jobNumber
+    	gp_current_task->TcbInfo->rt_jobNumber++;
     	gp_current_task->state = SUSPENDED;
     	TCB *p_tcb_old = gp_current_task;
 		gp_current_task = scheduler();
@@ -1337,11 +1336,10 @@ void k_tsk_done_rt(void) {
     }
     //3b. if deadline missed, send error message to UART port (putty), set state to ready, then switch tasks
     else {
-    	U32 jobNumber = 0; //TEMP; need to keep track of this somewhere
     	char strbuff[50];
-    	sprintf(strbuff, "Job %u of task %u missed its deadline", jobNumber, (U32) gp_current_task->tid);
+    	sprintf(strbuff, "Job %u of task %u missed its deadline", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
     	SER_PutStr(1, strbuff);
-    	//TODO: increment jobNumber
+    	gp_current_task->TcbInfo->rt_jobNumber++;
     	k_tsk_run_new();
     }
     return;
