@@ -254,19 +254,16 @@ void c_IRQ_Handler(void)
 	else if(interrupt_ID == HPS_TIMER0_IRQ_ID)
 	{
 		timer_clear_irq(0);
-		a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
-		if ((a9_timer_last - a9_timer_curr) > 500000U)
-		{
-			printf("%d ms passed!\r\n", ((a9_timer_last - a9_timer_curr)/1000U));
-			a9_timer_last = a9_timer_curr;
-		}
+		global_clk += 100;
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
+
 		timer_clear_irq(1);
 	}
 	else if(interrupt_ID == A9_TIMER_IRQ_ID)
 	{
+                
 		timer_clear_irq(2);
 	}
 	else

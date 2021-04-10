@@ -139,54 +139,42 @@ The memory map of the OS image may look like the following:
  *
  *****************************************************************************/
 
-//typedef struct priority_queue {
-//	TCB * heap[MAX_TASKS];
-//    int size;
-//} priority_queue;
+int initialized = 0;
+
 TCB * heap[MAX_TASKS];
 int q_size = 0;
-int initialized = 0;
-//priority_queue * global_q = NULL;
 
-// typedef struct tcb {
-//     struct tcb *next;   /**> next tcb, not used in this example         */
-//     U32        *msp;    /**> msp of the task, TCB_MSP_OFFSET = 4        */
-//     U8          tid;    /**> task id                                    */
-//     U8          prio;   /**> Execution priority                         */
-//     U8          state;  /**> task state                                 */
-//     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
-//     U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
-// } TCB;
 
-//               EnQueue    DeQueue     Peek
-// Binary Heap	O(log n)	O(log n)	O(1)
+TCB * rt_heap[MAX_TASKS];
+int rt_q_size = 0;
 
 void clearEvent( void );
-void swap(TCB * p1, TCB * p2);
+void swap(TCB * p1, TCB * p2, int mode );
 void remove( TCB * p );
 void changePriority( TCB * p );
-TCB dequeue( void );
-int moveUp(int i);
+TCB dequeue( int mode );
+void moveToEnd( TCB * p );
+int moveUp(int i, int mode);
 void enqueue( TCB * p );
 TCB * get_highest_priority( void );
-void heapify( int i );
+void heapify( int i, int mode );
 
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
-int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
-int old_priority = NULL; // if a thread switched priority I need the previous state
-
+char * thread_changed_event = NULL; // if a thread has created, exits, and prio changes
+int old_priority = NULL; // if a thread switched priority I need the previous state 
 
 // note: scheduler is called when task is 
 TCB *scheduler(void)
 {
-	int state = thread_changed_event;
-	printf("size: %d \r\n", q_size );
-    if ( initialized == 0 ) {  // initialize the queue
+    if ( initialized == 0 ) {  // initialize the queues
 
         // build the priority_queue datastructure
         q_size = 0;
+        rt_q_size = 0;
+
+        // go through linked list
         TCB* curr;
-        curr= TCBhead;
+        curr = TCBhead;
 
         while (curr != NULL ) {
         	enqueue(curr);
@@ -198,13 +186,13 @@ TCB *scheduler(void)
 
     } else { // check if a state has changed, this could be called from created, exits, prio changes
 
-        if ( thread_changed_event != -1 ) {
+        if ( thread_changed_event != NULL ) {
 
-            if ( thread_changed_event == TCREATED ) {
+            if ( thread_changed_event == "CREATED" ) {
                 enqueue( thread_changed_p );
-            } else if ( thread_changed_event == TEXITED ) {
+            } else if ( thread_changed_event == "EXITED" ) {
                 remove( thread_changed_p );
-            } else if ( thread_changed_event == TPRIORITY ) {
+            } else if ( thread_changed_event == "PRIORITY" ) {
                 changePriority( thread_changed_p );
             }
 
@@ -216,6 +204,13 @@ TCB *scheduler(void)
     for(int i =0; i<q_size; i++){
     	printf("element in queue: 0x%x and priority: %d \r\n",heap[i], heap[i]->prio);
     }
+
+    printf("size: %d \r\n", rt_q_size );
+    printf("checking queue ======================================= \r\n");
+    for(int i =0; i < rt_q_size; i++){
+    	printf("element in queue: 0x%x and priority: %d \r\n",rt_heap[i], rt_heap[i]->prio);
+    }
+
     return get_highest_priority();
 }
 
@@ -227,135 +222,286 @@ void clearEvent() {
 }
 
 // swap two TCBS on the global queue
-void swap(TCB * p1, TCB * p2) {
-	//TCB* tmp =NULL;
-	//tmp = heap[p1->scheduler_index];
-    heap[p1->scheduler_index] = p2;
-    heap[p2->scheduler_index] = p1;
-    printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
-    printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
-    printf("new p1: 0x%x new p2: 0x%x \r\n", heap[p1->scheduler_index] , heap[p2->scheduler_index]  );
+// mode 0 for RT heap
+// mode 1 for Non RT heap
+void swap(TCB * p1, TCB * p2, int mode ) {
 
-    int tmp = p1->scheduler_index;
-    p1->scheduler_index = p2->scheduler_index;
-    p2->scheduler_index = tmp;
+    if ( mode == 0 ) {
+        rt_heap[p1->scheduler_index] = p2;
+        rt_heap[p2->scheduler_index] = p1;
+        printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
+        printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
+        printf("new p1: 0x%x new p2: 0x%x \r\n", rt_heap[p1->scheduler_index] , rt_heap[p2->scheduler_index]  );
+
+        int tmp = p1->scheduler_index;
+        p1->scheduler_index = p2->scheduler_index;
+        p2->scheduler_index = tmp;
+    } else {
+        heap[p1->scheduler_index] = p2;
+        heap[p2->scheduler_index] = p1;
+        printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
+        printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
+        printf("new p1: 0x%x new p2: 0x%x \r\n", heap[p1->scheduler_index] , heap[p2->scheduler_index]  );
+
+        int tmp = p1->scheduler_index;
+        p1->scheduler_index = p2->scheduler_index;
+        p2->scheduler_index = tmp;
+    }
 }
 
 // removes a specific thread from the priority queue
+// RT
 void remove( TCB * p ) {
 
-    p->prio = PRIO_RT; // make the node go to the top of the heap
+    p->prio = -1; // hopefully this works
 
     printf("remove index: %d \r\n", p->scheduler_index);
 
-    // Shift the node to the root
-    p->scheduler_index = moveUp( p->scheduler_index );
-    printf("global queue size: %d /r/n", q_size );
-
-    for(int i =0; i<q_size; i++){
-      	printf("element in queue: 0x%x and priority: %d \r\n",heap[i], heap[i]->prio);
-      }
-
 
     // Extract the node
-    dequeue();
+    if ( p->prio == PRIO_RT ) {
+
+        // Shift the node to the root
+        p->scheduler_index = moveUp( p->scheduler_index, 0 );
+
+        dequeue( 0 );
+    } else {
+
+        // Shift the node to the root
+        p->scheduler_index = moveUp( p->scheduler_index, 1 );
+
+        dequeue( 1 );
+    }
 }
 
 // changes the priority of a thread
+// RT
 void changePriority( TCB * p ) {
 
     if ( p->prio < old_priority ) {
-        p->scheduler_index = moveUp( p->scheduler_index );
-    } else {
-        heapify( p->scheduler_index );
-    }
 
-  //  heapify( p->scheduler_index );
+        // Extract the node
+        if ( p->prio == PRIO_RT ) {
+            p->scheduler_index = moveUp( p->scheduler_index, 0 );
+        } else {
+            p->scheduler_index = moveUp( p->scheduler_index, 1 );
+        }
+    } else {
+        if ( p->prio == PRIO_RT ) {
+            heapify( p->scheduler_index, 0 );
+        } else {
+            heapify( p->scheduler_index, 1 );
+        }
+    }
 }
 
 // deletes the max item and return
-TCB dequeue() {
+// mode 0 for RT heap
+// mode 1 for Non RT heap
+TCB dequeue( int mode ) {
 
-    TCB max = *heap[0];
+    TCB max;
 
-    // replace the first item with the last item
-    swap( heap[0], heap[ q_size - 1] );
-    q_size--;
-    for(int i =0; i<q_size; i++){
+    if ( mode == 0 ) { // RT mode
+
+        max = *rt_heap[0];
+
+        // replace the first item with the last item
+        swap( rt_heap[0], rt_heap[ rt_q_size - 1], 0 );
+        rt_q_size--;
+        for(int i = 0; i<rt_q_size; i++){
+        	printf("rt element in queue: 0x%x and priority: %d and sched index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index);
+        }
+
+        // maintain the heap property by heapifying the
+        // first item
+        heapify( 0, 0 );
+
+    } else { // Non RT mode
+
+        max = *heap[0];
+
+        // replace the first item with the last item
+        swap( heap[0], heap[ q_size - 1], 1 );
+        q_size--;
+        for(int i =0; i<q_size; i++){
         	printf("element in queue: 0x%x and priority: %d and sched index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index);
         }
 
-    // maintain the heap property by heapifying the
-    // first item
-    heapify( 0 );
+        // maintain the heap property by heapifying the
+        // first item
+        heapify( 0, 1 );
+    }
+
+    
+
     return max;
 }
 
 // moves the element up to the top
-int moveUp(int i) {
-    while (i != 0 && (*heap[(i - 1) / 2]).prio > (*heap[i]).prio) {
-    	printf("SWAPPED! \r\n");
-        swap( heap[(i - 1) / 2], heap[i]);
-        i = (i - 1) / 2;
+// mode 0 for RT heap
+// mode 1 for Non RT
+int moveUp(int i, int mode) {
+
+    if ( mode == 0 ){
+        while (i != 0 && (*rt_heap[(i - 1) / 2]).next_job_deadline > (*rt_heap[i]).next_job_deadline) {
+            printf("SWAPPED! \r\n");
+            swap( rt_heap[(i - 1) / 2], rt_heap[i], 0);
+            i = (i - 1) / 2;
+        }
+    } else {
+        while (i != 0 && (*heap[(i - 1) / 2]).prio > (*heap[i]).prio) {
+            printf("SWAPPED! \r\n");
+            swap( heap[(i - 1) / 2], heap[i], 0);
+            i = (i - 1) / 2;
+        }
     }
+    
 
     return i;
 }
 
-// add the thread to our heap at the appropriate position
+
+
+// for RT tasks the deadline is the curr_time % longest_deadline
+void compute_next_job_deadline( TCB * p ) {
+
+    unsigned int seconds_in_usec = p->TcbInfo->p_n->tv_sec * 1000000;
+    unsigned int usec = p->TcbInfo->p_n->tv_usec;
+
+    if ( p->next_job_deadline == 0 ) {
+
+        p->next_job_deadline = global_clk + seconds_in_usec + usec;
+    
+    } else {
+
+        p->next_job_deadline = p->next_job_deadline + seconds_in_usec + usec;
+
+    }
+}
+
+// add the thread to our heap at the appropriate position for both RT and non-RT
 void enqueue( TCB * p ) {
+
+    int i;
 	printf("address of p: 0x%x \r\n", p);
-    if ( q_size >= MAX_TASKS ) {
+
+    if ( q_size + rt_q_size >= MAX_TASKS ) {
         printf("%s\n", "The heap is full. Cannot insert");
         return;
     }
 
-    // first insert at end and increment size
-    int i = q_size;
-    heap[q_size] = p;
-    p->scheduler_index = q_size;
-    printf("heap element: 0x%x \r\n",heap[q_size] );
+    if ( p->prio == PRIO_RT ) {
 
-    q_size += 1;
+        // first insert at end and increment size
+        i = rt_q_size;
+        rt_heap[rt_q_size] = p;
+        p->scheduler_index = rt_q_size;
+        printf("rt heap element: 0x%x \r\n",rt_heap[rt_q_size] );
+        rt_q_size += 1;
+        printf("rt size: %d \r\n", rt_q_size);
 
-    printf("size: %d \r\n", q_size);
+        compute_next_job_deadline( p );
 
-    // move up until the heap property satisfies
-    p->scheduler_index =moveUp(i);
-    for(int i = 0; i<q_size; i++){
-    	printf("queue element: 0x%x priority: %d scheduler index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index );
+        // move up until the heap property satisfies
+        p->scheduler_index = moveUp(i, 0);
+        for(int i = 0; i<rt_q_size; i++){
+            printf("rt queue element: 0x%x priority: %d scheduler index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index );
 
+        }
+
+    } else {
+
+        // first insert at end and increment size
+        i = q_size;
+        heap[q_size] = p;
+        p->scheduler_index = q_size;
+        printf("heap element: 0x%x \r\n",heap[q_size] );
+        q_size += 1;
+        printf("size: %d \r\n", q_size);
+
+        // move up until the heap property satisfies
+        p->scheduler_index =moveUp(i, 1);
+        for(int i = 0; i<q_size; i++){
+            printf("queue element: 0x%x priority: %d scheduler index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index );
+
+        }
     }
 }
 
-// returns the minimum item of the heap
+
+
+// returns the minimum item of either RT or Non-RT heap
+// if RT then move to back of the line, as we've executed a job
 TCB * get_highest_priority() {
-    return heap[ 0 ];
+    if ( rt_q_size == 0 ) {
+        return heap[ 0 ];
+    } {
+        TCB * p = rt_heap[ 0 ];
+        moveToEnd( p );
+        compute_next_job_deadline( p );
+        return p;
+    }
+}
+
+// moves an RT task to the end of the line after it executes it's job
+void moveToEnd( TCB * p ) {
+    
+    dequeue( 0 ); // dequeue from the RT heap
+
+    rt_heap[rt_q_size] = p;
+    p->scheduler_index = rt_q_size;
+    rt_q_size += 1;
+
 }
 
 // we are going to maintain a heap for the tcbs
-void heapify( int i )
+// 0 for RT tasks
+// 1 for Non RT tasks
+void heapify( int i, int mode )
 {
     int smallest = i;
     int l = 2 * i + 1;
     int r = 2 * i + 2;
-    int n = q_size;
-//    TCB ** arr = heap;
 
-    // If left child is larger than root
-    if (l < n && heap[l]->prio < heap[smallest]->prio)
-        smallest = l;
+    if ( mode == 0 ) {
 
-    // If right child is larger than largest so far
-    if (r < n && heap[r]->prio < heap[smallest]->prio)
-        smallest = r;
+        int n = rt_q_size;
 
-    // If largest is not root
-    if (smallest != i) {
-        swap(heap[i], heap[smallest]);
-        heapify( smallest );
+        // If left child is larger than root
+        if (l < n && rt_heap[l]->next_job_deadline < rt_heap[smallest]->next_job_deadline)
+            smallest = l;
+
+        // If right child is larger than largest so far
+        if (r < n && rt_heap[r]->next_job_deadline < rt_heap[smallest]->next_job_deadline)
+            smallest = r;
+
+        // If largest is not root
+        if (smallest != i) {
+            swap(rt_heap[i], rt_heap[smallest], 0);
+            heapify( smallest, 0  );
+        }
+
+    } else {
+
+        int n = q_size;
+
+        // If left child is larger than root
+        if (l < n && heap[l]->prio < heap[smallest]->prio)
+            smallest = l;
+
+        // If right child is larger than largest so far
+        if (r < n && heap[r]->prio < heap[smallest]->prio)
+            smallest = r;
+
+        // If largest is not root
+        if (smallest != i) {
+            swap(heap[i], heap[smallest], 1);
+            heapify( smallest, 1 );
+        }
     }
 }
+
 
 /**************************************************************************//**
  * @brief       initialize all boot-time tasks in the system,
@@ -376,6 +522,9 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
     RTX_TASK_INFO *p_taskinfo = &g_null_task_info;
     g_num_active_tasks = 0;
+
+    // start the HPS timer 0
+    config_hps_timer(0, 100, 0, 0);
 
 
 
