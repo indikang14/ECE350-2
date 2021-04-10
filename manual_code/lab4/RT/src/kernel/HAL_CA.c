@@ -258,6 +258,32 @@ void c_IRQ_Handler(void)
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
+		int i = 0;
+		int next_time = 0;
+
+		// remove and unsuspend tasks
+		while (i < total_suspended_tasks) {
+			if (suspended_tasks[i]->time->usec >= 100) {
+				suspended_tasks[i]->time->usec -= 100;
+			} else {
+				suspended_tasks[i]->time->sec -= 1;
+				suspended_tasks[i]->time->usec = 999900;
+			};
+
+			if (suspended_tasks[i]->time->sec <= 0 && suspended_tasks[i]->time->usec <= 0) {
+				// unsuspend
+				suspended_tasks[i]->task->state = READY;
+				thread_changed_event = TCREATED;
+				thread_changed_p = suspended_tasks[i]->task;
+				gp_current_task = scheduler();
+
+				// remove from list
+				suspended_tasks[i] = suspended_tasks[total_suspended_tasks];
+				total_suspended_tasks--;
+			} else {
+				i++;
+			}
+		};
 
 		timer_clear_irq(1);
 		gp_current_task->state = RUNNING;
