@@ -1201,32 +1201,9 @@ void k_tsk_suspend(TIMEVAL *tv)
 
     SUSPEND_INFO* new_sus;
     new_sus->task = gp_current_task;
-    if(total_suspended_tasks == 0) {
-    	// timer is free for use
-    	config_a9_timer(tv->usec + tv->sec*10^6,0,1,199);
-    	tv->sec = 0;
-    	tv->usec = 0;
-    } else if (current_time <= tv->usec + tv->sec*10^6) {
-    	// timer is being used for shorter task :)
-    	int new_time =  tv->usec + tv->sec*10^6 - current_time;
-    	tv->sec = new_time/(10^6);
-    	tv->usec = new_time % (10^6);
-    } else {
-    	// timer is being used for a longer task :p
-    	int time_diff =  current_time - tv->usec + tv->sec*10^6;
-    	int new_time;
-    	for (int i = 0; i < total_suspended_tasks; i++) {
-    		new_time = time_diff + suspended_tasks[i]->time->sec*(10^6) + suspended_tasks[i]->time->usec;
-    		suspended_tasks[i]->time->sec = new_time/(10^6);
-    		suspended_tasks[i]->time->usec = new_time%(10^6);
-    	}
-    	config_a9_timer(tv->usec + tv->sec*10^6,0,1,199);
-    	tv->sec = 0;
-    	tv->usec = 0;
-    }
-
     new_sus->time = tv;
     suspended_tasks[total_suspended_tasks] = new_sus;
+
     total_suspended_tasks++;
 
     TCB* p_tcb_old;
