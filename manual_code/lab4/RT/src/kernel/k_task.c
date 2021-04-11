@@ -381,7 +381,7 @@ void compute_next_job_deadline( TCB * p ) {
 
     if ( p->next_job_deadline == 0 ) {
 
-        p->next_job_deadline = global_clk + seconds_in_usec + usec;
+        p->next_job_deadline = global_clk + seconds_in_usec + usec + 100;
     
     } else {
 
@@ -535,7 +535,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
 
 
     // setup the A9 timer in auto loading mode
-    // calculate prescaler
+    // calculate prescaler to make each cycle = 1 us
     config_a9_timer( 0xFFFFFFFF, 1, 0, 200);
 
     // start the HPS timer 0
