@@ -253,19 +253,25 @@ void c_IRQ_Handler(void)
 	}
 	else if(interrupt_ID == HPS_TIMER0_IRQ_ID)
 	{
+
                 // clear IRQ line to register the interupt
 		timer_clear_irq(0);
 
 		a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
+		//printf("")
 
-		int time_elasped = floor( (double)(a9_timer_last - a9_timer_curr) / (double)100 ) * 100; // floor to the nearest 100
+
+		int time_elasped = ( (a9_timer_last - a9_timer_curr) / 100 ) * 100; // floor to the nearest 100
 
                 a9_timer_last = a9_timer_curr;
 		global_clk += time_elasped;
+		//printf("")
+
+		config_hps_timer(0, 10000, 1, 0);
 
                 // start the HPS timer 0
                 // 100 us / 10 ns = 10,000 cyles
-                config_hps_timer(0, 10000, 1, 0);
+
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
@@ -311,6 +317,8 @@ void c_IRQ_Handler(void)
 	}
 	// Write to the End of Interrupt Register (ICCEOIR)
 	GIC_EndInterrupt(interrupt_ID);
+
+
 	// Make sure to call line 246 before context switching
 	if (switch_flag == 1)
 	{

@@ -39,6 +39,7 @@
 #include "rtx.h"
 #include "Serial.h"
 #include "printf.h"
+#include "k_task.h"
 
 
 /**
@@ -58,7 +59,10 @@ void utask1(void)
 		{
 			SER_PutChar(0, out_char);
 		}
-		SER_PutStr(0, "\n\r");
+		char strbuff[50];
+		sprintf(strbuff, "this is the hps val: %d\n\r", (U32)timer_get_current_val(0));
+
+		SER_PutStr(0, strbuff);
 		++i;
 		for (x = 0; x < 5000000; x++)
 			; // some artifical delay
@@ -79,9 +83,15 @@ void utask2(void)
 		SER_PutStr(0, "utask2: ");
 		char out_char = 'A' + i % 10;
 		for (j = 0; j < 5; j++) {
+
 			SER_PutChar(0, out_char);
+
+
 		}
-		SER_PutStr(0, "\n\r");
+		char strbuff[50];
+		sprintf(strbuff, "this is the hps val: %d\n\r", (U32)timer_get_current_val(0));
+
+		SER_PutStr(0, strbuff);
 		++i;
 		for (x = 0; x < 5000000; x++)
 			; // some artifical delay

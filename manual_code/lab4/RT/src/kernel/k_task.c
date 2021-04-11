@@ -362,7 +362,7 @@ int moveUp(int i, int mode) {
     } else {
         while (i != 0 && (*heap[(i - 1) / 2]).prio > (*heap[i]).prio) {
             printf("SWAPPED! \r\n");
-            swap( heap[(i - 1) / 2], heap[i], 0);
+            swap( heap[(i - 1) / 2], heap[i], 1);
             i = (i - 1) / 2;
         }
     }
@@ -594,12 +594,21 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         if(newTCB->prio == PRIO_RT) {
         	newTCB->next_job_deadline = 0;
         	 if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
-        	    		if(k_mbx_create(newTCB->TcbInfo->rt_mbx_size) == RTX_ERR) {
-        	    				return RTX_ERR;
-        	    			}
+        		 size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
 
-        	        }
-        }
+        		     //allocate memory for mailbox
+        		     kernelOwnedMemory = 1;
+        		     U8 *p_mbx = k_mem_alloc(newsize);
+        		     kernelOwnedMemory = 0;
+        		     //check that allocation was successful
+        		     if (p_mbx == NULL) return -1;
+        		     newTCB->mbx_cq.memblock_p = p_mbx;
+        		     newTCB->mbx_cq.size = newsize;
+        		     newTCB->mbx_cq.remainingSize = newsize;
+					}
+
+        	    }
+
 
 
 
@@ -615,40 +624,40 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     }
 
     //initialize KCD task
-    if(oldTCB->next == NULL) {
-    	newTCB = &g_tcbs[15];
-    	 newTCB->next = NULL; //initialize next pointer  of current task
-    	 newTCB->tid = 15;
-    	 oldTCB->next = newTCB;
+//    if(oldTCB->next == NULL) {
+//    	newTCB = &g_tcbs[15];
+//    	 newTCB->next = NULL; //initialize next pointer  of current task
+//    	 newTCB->tid = 15;
+//    	 oldTCB->next = newTCB;
+//
+//    	 RTX_TASK_INFO* kcdInfo;
+//    	 kcdInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
+//    	 newTCB->TcbInfo = kcdInfo;
+//    	 // initialize TCB structure
+//    	 	newTCB->prio = 1;
+//    	 	newTCB->state = READY;
+//    	 	newTCB->priv = 0;
+//    	 	newTCB->TcbInfo->state = READY;
+//    	 	newTCB->TcbInfo->u_stack_size = KCD_MBX_SIZE;
+//    	 	newTCB->TcbInfo->k_stack_size = KERN_STACK_SIZE;
+//    	 	newTCB->TcbInfo->ptask = &kcd_task;
+//    	 	//initializing mailbox
+//    	 	CQ mbx_cq;
+//    	 	        mbx_cq.head = NULL;
+//    	 	        mbx_cq.tail = NULL;
+//    	 	        mbx_cq.size = 0;
+//    	 	        mbx_cq.remainingSize = 0;
+//    	 	        mbx_cq.memblock_p = NULL;
+//    	 	       newTCB->mbx_cq = mbx_cq;
+//
+//    	 	//increment number of active tasks
+//    	 	if(k_tsk_create_new(newTCB->TcbInfo,newTCB, newTCB->tid ) == RTX_OK) {
+//    	 		g_num_active_tasks++;
+//    	 	}
 
-    	 RTX_TASK_INFO* kcdInfo;
-    	 kcdInfo = k_mem_alloc(sizeof(RTX_TASK_INFO));
-    	 newTCB->TcbInfo = kcdInfo;
-    	 // initialize TCB structure
-    	 	newTCB->prio = HIGH;
-    	 	newTCB->state = READY;
-    	 	newTCB->priv = 0;
-    	 	newTCB->TcbInfo->state = READY;
-    	 	newTCB->TcbInfo->u_stack_size = KCD_MBX_SIZE;
-    	 	newTCB->TcbInfo->k_stack_size = KERN_STACK_SIZE;
-    	 	newTCB->TcbInfo->ptask = &kcd_task;
-    	 	//initializing mailbox
-    	 	CQ mbx_cq;
-    	 	        mbx_cq.head = NULL;
-    	 	        mbx_cq.tail = NULL;
-    	 	        mbx_cq.size = 0;
-    	 	        mbx_cq.remainingSize = 0;
-    	 	        mbx_cq.memblock_p = NULL;
-    	 	       newTCB->mbx_cq = mbx_cq;
-
-    	 	//increment number of active tasks
-    	 	if(k_tsk_create_new(newTCB->TcbInfo,newTCB, newTCB->tid ) == RTX_OK) {
-    	 		g_num_active_tasks++;
-    	 	}
 
 
-
-    }
+    //}
 
 
     oldTCB = TCBhead;
@@ -841,7 +850,7 @@ int k_tsk_run_new(void)
     // at this point, gp_current_task != NULL and p_tcb_old != NULL
     if (gp_current_task != p_tcb_old) {
         gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
-        p_tcb_old->state = READY;           // change state of the to-be-switched-out tcb
+        p_tcb_old->state = READY;   // change state of the to-be-switched-out tcb
         k_tsk_switch(p_tcb_old);            // switch stacks
     }
 
@@ -972,12 +981,12 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->ptask = task_entry;
 	//initializing mailbox
 	CQ mbx_cq;
-	        mbx_cq.head = NULL;
-	        mbx_cq.tail = NULL;
-	        mbx_cq.size = 0;
-	        mbx_cq.remainingSize = 0;
-	        mbx_cq.memblock_p = NULL;
-	        newTaskBlock->mbx_cq = mbx_cq;
+	mbx_cq.head = NULL;
+	mbx_cq.tail = NULL;
+	mbx_cq.size = 0;
+	mbx_cq.remainingSize = 0;
+	mbx_cq.memblock_p = NULL;
+	newTaskBlock->mbx_cq = mbx_cq;
 
 	//increment number of active tasks
 	if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {
@@ -1285,10 +1294,19 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 
 			        // allocating space for mailbox
 		if(task->rt_mbx_size > 0 && task->rt_mbx_size > MIN_MBX_SIZE ) {
-			if(k_mbx_create(task->rt_mbx_size) == RTX_ERR) {
-				return RTX_ERR;
+			 size_t newsize = newTaskBlock->TcbInfo->rt_mbx_size % 4 == 0 ? newTaskBlock->TcbInfo->rt_mbx_size : (newTaskBlock->TcbInfo->rt_mbx_size / 4 + 1) * 4;
+
+			 //allocate memory for mailbox
+			 kernelOwnedMemory = 1;
+			 U8 *p_mbx = k_mem_alloc(newsize);
+			 kernelOwnedMemory = 0;
+			 //check that allocation was successful
+			 if (p_mbx == NULL) return -1;
+			 newTaskBlock->mbx_cq.memblock_p = p_mbx;
+			 newTaskBlock->mbx_cq.size = newsize;
+			 newTaskBlock->mbx_cq.remainingSize = newsize;
 			}
-		}
+
 
 		//increment number of active tasks
 		if(k_tsk_create_new(newTaskBlock->TcbInfo,newTaskBlock, newTaskBlock->TcbInfo->tid ) == RTX_OK) {

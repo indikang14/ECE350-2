@@ -114,6 +114,16 @@ void ae_set_task_info(RTX_TASK_INFO *tasks, int num_tasks) {
 	tasks[0].ptask = &ktask1;
 	tasks[1].ptask = &utask1;
 	tasks[2].ptask = &utask2;
+	tasks[1].prio = PRIO_RT;
+	tasks[1].p_n.sec = 5;
+	tasks[1].rt_mbx_size = KCD_MBX_SIZE;
+	tasks[2].prio = PRIO_RT;
+	tasks[2].p_n.sec = 2;
+	tasks[2].rt_mbx_size = 0;
+//	tasks[3].prio = PRIO_RT;
+//	tasks[4].prio = PRIO_RT;
+//	tasks[3].priv = 0;
+//	tasks[4].priv = 1;
 	return;
 }
 
