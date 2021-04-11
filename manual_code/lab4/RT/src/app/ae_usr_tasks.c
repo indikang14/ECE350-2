@@ -60,7 +60,7 @@ void utask1(void)
 			SER_PutChar(0, out_char);
 		}
 		char strbuff[50];
-		sprintf(strbuff, "this is the hps val: %d\n\r", (U32)timer_get_current_val(0));
+		sprintf(strbuff, "this is the global clock: %d\n\r", global_clk);
 
 		SER_PutStr(0, strbuff);
 		++i;

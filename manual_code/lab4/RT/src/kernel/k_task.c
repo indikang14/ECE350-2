@@ -167,7 +167,7 @@ void heapify( int i, int mode );
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
 int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
 int old_priority = NULL; // if a thread switched priority I need the previous stateTCB * thread_changed_p = NULL
-U64 global_clk = 0;
+unsigned int global_clk = 0;
 
  //thread_changed_p = NULL; // if a thread has created, exits, and prio changes
  //thread_changed_event = NULL; // if a thread has created, exits, and prio changes
