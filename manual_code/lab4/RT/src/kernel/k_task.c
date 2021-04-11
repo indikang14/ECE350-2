@@ -533,10 +533,14 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     RTX_TASK_INFO *p_taskinfo = &g_null_task_info;
     g_num_active_tasks = 0;
 
+
+    // setup the A9 timer in auto loading mode
+    // calculate prescaler
+    config_a9_timer( 0xFFFFFFFF, 1, 0, 200);
+
     // start the HPS timer 0
-    config_hps_timer(0, 100, 0, 0);
-
-
+    // 100 us / 10 ns = 10,000 cyles
+    config_hps_timer(0, 10000, 1, 0);
 
     if (num_tasks >= MAX_TASKS) {
     	return RTX_ERR;
@@ -831,6 +835,9 @@ int k_tsk_run_new(void)
         return RTX_ERR;
     }
     printf("address of current task: 0x%x \r\n",gp_current_task );
+
+
+
     // at this point, gp_current_task != NULL and p_tcb_old != NULL
     if (gp_current_task != p_tcb_old) {
         gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
