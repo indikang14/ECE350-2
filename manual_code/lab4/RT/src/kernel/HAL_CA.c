@@ -254,20 +254,17 @@ void c_IRQ_Handler(void)
 	else if(interrupt_ID == HPS_TIMER0_IRQ_ID)
 	{
 
-                // clear IRQ line to register the interupt
+                // clear IRQ line to register the interrupt
 		timer_clear_irq(0);
 
 		a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
-		//printf("")
-
 
 		int time_elasped = ( (a9_timer_last - a9_timer_curr) / 100 ) * 100; // floor to the nearest 100
 
-                a9_timer_last = a9_timer_curr;
+        a9_timer_last = a9_timer_curr;
 		global_clk += time_elasped;
-		//printf("")
 
-		config_hps_timer(0, 10000, 1, 0);
+		//config_hps_timer(0, 10000, 1, 0);
 
                 // start the HPS timer 0
                 // 100 us / 10 ns = 10,000 cyles
