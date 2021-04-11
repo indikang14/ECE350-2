@@ -1333,7 +1333,7 @@ void k_tsk_done_rt(void) {
     printf("k_tsk_done: Entering\r\n");
 #endif /* DEBUG_0 */
 
-    //1. reset calling task's user stack to starting address
+    //1. reset calling task's user stack to what it looks on create
     //+
     //2. reset calling task's program counter on wake-up to 'task_entry'
 
@@ -1350,11 +1350,18 @@ void k_tsk_done_rt(void) {
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
     if (deadlineMet == 	 TRUE) {
-    	//assumption: the scheduler will always return a different task.
+    	SUSPEND_INFO* new_sus;
+		new_sus->task = gp_current_task;
+		new_sus->total_usecs = gp_current_task->next_job_deadline - global_clk;
+		suspended_tasks[total_suspended_tasks] = new_sus;
+		total_suspended_tasks++;
 
+    	//assumption: the scheduler will always return a different task.
     	gp_current_task->TcbInfo->rt_jobNumber++;
     	gp_current_task->state = SUSPENDED;
     	TCB *p_tcb_old = gp_current_task;
+    	thread_changed_event = TEXITED;
+    	thread_changed_p = p_tcb_old;
 		gp_current_task = scheduler();
 		gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
 		k_tsk_switch(p_tcb_old);            // switch stacks
@@ -1365,7 +1372,7 @@ void k_tsk_done_rt(void) {
     	sprintf(strbuff, "Job %u of task %u missed its deadline", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
     	SER_PutStr(1, strbuff);
     	gp_current_task->TcbInfo->rt_jobNumber++;
-    	k_tsk_run_new();
+    	k_tsk_run_new(); //set this task to ready and get a new task to run
     }
     return;
 }
@@ -1384,11 +1391,9 @@ void k_tsk_suspend(TIMEVAL *tv)
     	return;
     }
 
-    int current_time = timer_get_current_val(2);
-
     SUSPEND_INFO* new_sus;
     new_sus->task = gp_current_task;
-    new_sus->time = tv;
+    new_sus->total_usecs = tv->sec * 1000000 + tv->usec;
     suspended_tasks[total_suspended_tasks] = new_sus;
 
     total_suspended_tasks++;

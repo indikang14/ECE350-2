@@ -255,22 +255,61 @@ void c_IRQ_Handler(void)
 	{
 		// clear IRQ line to register the interrupt
 		timer_clear_irq(0);
-
 		a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
-
-		unsigned int time_elasped = ( (a9_timer_last - a9_timer_curr) / 100 ) * 100; // floor to the nearest 100
-
+		unsigned int time_elapsed = ( (a9_timer_last - a9_timer_curr) / 100 ) * 100; // floor to the nearest 100
 		a9_timer_last = a9_timer_curr;
-		global_clk += time_elasped;
+		global_clk += time_elapsed;
 
-		//config_hps_timer(0, 10000, 1, 0);
-		// start the HPS timer 0
-		// 100 us / 10 ns = 10,000 cyles
-
+		//wake up suspended tasks if needed
+		int i = 0;
+		// remove and unsuspend tasks
+		while (i < total_suspended_tasks) {
+			if (time_elapsed >= suspended_tasks[i]->total_usecs) {
+				// unsuspend
+				suspended_tasks[i]->task->state = READY;
+				thread_changed_event = TCREATED;
+				thread_changed_p = suspended_tasks[i]->task;
+				// remove from list
+				suspended_tasks[i] = suspended_tasks[total_suspended_tasks - 1];
+				total_suspended_tasks--;
+				switch_flag = 1;
+			} else {
+				i++;
+				suspended_tasks[i]->total_usecs -= time_elapsed;
+			}
+		}
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
+		/*
+		int i = 0;
+		int next_time = 0;
+
+		// remove and unsuspend tasks
+		while (i < total_suspended_tasks) {
+			if (suspended_tasks[i]->time->usec >= 100) {
+				suspended_tasks[i]->time->usec -= 100;
+			} else {
+				suspended_tasks[i]->time->sec -= 1;
+				suspended_tasks[i]->time->usec = 999900;
+			};
+
+			if (suspended_tasks[i]->time->sec <= 0 && suspended_tasks[i]->time->usec <= 0) {
+				// unsuspend
+				suspended_tasks[i]->task->state = READY;
+				thread_changed_event = TCREATED;
+				thread_changed_p = suspended_tasks[i]->task;
+				// remove from list
+				suspended_tasks[i] = suspended_tasks[total_suspended_tasks - 1];
+				total_suspended_tasks--;
+			} else {
+				i++;
+			}
+		};
+
 		timer_clear_irq(1);
+		switch_flag = 1;
+		*/
 	}
 	else if(interrupt_ID == A9_TIMER_IRQ_ID)
 	{

@@ -117,7 +117,7 @@ void ae_set_task_info(RTX_TASK_INFO *tasks, int num_tasks) {
 	tasks[1].prio = PRIO_RT;
 	tasks[1].p_n.sec = 5;
 	tasks[1].rt_mbx_size = KCD_MBX_SIZE;
-	tasks[2].prio = PRIO_RT;
+	tasks[2].prio = MEDIUM;
 	tasks[2].p_n.sec = 8;
 	tasks[2].rt_mbx_size = 0;
 //	tasks[3].prio = PRIO_RT;

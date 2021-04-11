@@ -47,8 +47,12 @@
  */
 void utask1(void)
 {
-	SER_PutStr(0, "utask1: entering \n\r");
-	/* do something */
+	//SER_PutStr(0, "utask1: entering \n\r");
+	char strbuff[50];
+	sprintf(strbuff, "\tUTASK1: this is the global clock: %d\n\r", global_clk);
+	SER_PutStr(0, strbuff);
+	k_tsk_done_rt();
+	/* do something
 	long int x = 0;
 	int i = 0;
 	int j = 0;
@@ -68,7 +72,7 @@ void utask1(void)
 			; // some artifical delay
 	}
 	/* terminating */
-	 tsk_exit();
+	 //tsk_exit();
 }
 
 void utask2(void)
@@ -78,9 +82,6 @@ void utask2(void)
 	long int x = 0;
 	int i = 0;
 	int j = 0;
-
-
-
 	while (1)
 	{
 		SER_PutStr(0, "utask2: ");
@@ -99,11 +100,6 @@ void utask2(void)
 		sprintf(strbuff, "this is the hps val: %d\n\r", (U32)timer_get_current_val(0));
 
 		SER_PutStr(0, strbuff);
-
-
-
-
-
 
 		++i;
 		for (x = 0; x < 5000000; x++)

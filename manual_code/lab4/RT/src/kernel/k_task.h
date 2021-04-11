@@ -51,9 +51,9 @@
  *==========================================================================
  */
 typedef struct suspend_info {
-	struct suspend_info *next;
+	//struct suspend_info *next;
     TCB *task;
-    TIMEVAL *time;
+    U32 total_usecs;
 } SUSPEND_INFO;
 extern TCB *gp_current_task;
 extern BOOL kernelOwnedMemory;
