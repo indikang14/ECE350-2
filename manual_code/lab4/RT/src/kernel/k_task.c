@@ -1495,6 +1495,7 @@ void k_tsk_done_rt(void) {
     	char strbuff[50];
     	sprintf(strbuff, "Job %u of task %u missed its deadline\r\n", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
     	SER_PutStr(1, strbuff);
+    	SER_PutStr(0, strbuff);
     	gp_current_task->TcbInfo->rt_jobNumber++;
     	k_tsk_run_new(); //set this task to ready and get a new task to run
     }
