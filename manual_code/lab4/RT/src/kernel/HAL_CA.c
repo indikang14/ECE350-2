@@ -266,7 +266,9 @@ void c_IRQ_Handler(void)
 		// remove and unsuspend tasks
 		while (checkFurther == TRUE) {
 			TCB* temp = get_highest_priority(3);
-			if (global_clk < temp->unsuspend_time) {
+			if (total_suspended_tasks == 0) {
+				checkFurther = FALSE;
+			} else if (global_clk < temp->unsuspend_time) {
 				checkFurther = FALSE;
 			} else { //global clock is greater or equal to unsuspend time
 				//char strbuff[50];
@@ -276,12 +278,13 @@ void c_IRQ_Handler(void)
 				thread_changed_event = TEXITED;
 				thread_changed_p = temp;
 				// remove from list
-				temp = scheduler();
+				scheduler(); //remove the smallest unsuspend_time TCB.
+				//temp is still the value that was removed
 				temp->unsuspend_time = 0;
 				temp->state = READY;
 				thread_changed_event = TCREATED;
 				thread_changed_p = temp;
-				scheduler(); //don't care about return, just update rt queue
+				scheduler(); //don't care about return, just add temp back to the rt queue
 
 				switch_flag = 1;
 			}

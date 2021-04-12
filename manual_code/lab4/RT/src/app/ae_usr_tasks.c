@@ -48,6 +48,7 @@
 void utask1(void)
 {
 	//SER_PutStr(0, "utask1: entering \n\r");
+	int temp = 0;
 	char strbuff[50];
 	sprintf(strbuff, "\tUTASK1: this is the global clock: %d\n\r", global_clk);
 	SER_PutStr(0, strbuff);
@@ -77,6 +78,8 @@ void utask1(void)
 
 void utask2(void)
 {
+
+	int asdf = 0;
 	SER_PutStr(0, "utask2: entering \n\r");
 	/* do something */
 	long int x = 0;

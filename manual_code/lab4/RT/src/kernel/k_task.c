@@ -225,6 +225,13 @@ TCB *scheduler(void)
     for(int i =0; i < rt_q_size; i++){
     	printf("element in RT queue: 0x%x and priority: %d \r\n",rt_heap[i], rt_heap[i]->prio);
     }
+
+    printf("size: %d \r\n", total_suspended_tasks );
+	printf("checking suspend queue ======================================= \r\n");
+	for(int i =0; i < total_suspended_tasks; i++){
+		printf("element in suspend queue: 0x%x and priority: %d \r\n",suspend_heap[i], suspend_heap[i]->unsuspend_time);
+	}
+
     printf("\r\n");
     return get_highest_priority(temp_mode);
 }
@@ -687,6 +694,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         printf("tid of current tcb is: %d \r\n", newTCB->tid);
         printf("address of current pTcb is: 0x%x \r\n ", newTCB);
         printf("address of previous pTcb is: 0x%x \r\n ", oldTCB);
+        int asfd = 0;
         p_taskinfo++;
         oldTCB = newTCB; // end of loop current TCB becomes old TCB
 
