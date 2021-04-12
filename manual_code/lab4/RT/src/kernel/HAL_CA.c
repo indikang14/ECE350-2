@@ -52,6 +52,9 @@
 #pragma push
 #pragma arm
 
+
+unsigned int a9_timer_last = 0xFFFFFFFF;
+
 /**************************************************************************//**
  * @brief   assembly labels that all embedded assembly code can refer to
  * @note    This function should not be called
@@ -229,7 +232,7 @@ EXIT_IRQ
 
 void c_IRQ_Handler(void)
 {
-	static unsigned int a9_timer_last = 0xFFFFFFFF; // the initial value of free-running timer
+	//static unsigned int a9_timer_last = 0xFFFFFFFF; // the initial value of free-running timer
 	unsigned int a9_timer_curr;
 
 

@@ -159,7 +159,7 @@ void remove( TCB * p );
 void changePriority( TCB * p );
 TCB dequeue( int mode );
 void moveToEnd( TCB * p );
-int moveUp(int i, int mode);
+int moveUp(int i, int mode, int tempprio);
 void enqueue( TCB * p );
 //TCB * get_highest_priority( int mode );
 void heapify( int i, int mode );
@@ -286,18 +286,19 @@ void remove( TCB * p ) {
     // Extract the node
 	if (p->unsuspend_time != 0) {
 		p->unsuspend_time = 0;
-		p->scheduler_index = moveUp( p->scheduler_index, 3 );
+		p->scheduler_index = moveUp( p->scheduler_index, 3, p->prio );
 		dequeue(3);
 	} else if ( p->prio == PRIO_RT ) {
     	p->prio = -1; // hopefully this works
         // Shift the node to the root
-        p->scheduler_index = moveUp( p->scheduler_index, 2 );
+        p->scheduler_index = moveUp( p->scheduler_index, 2, PRIO_RT );
 
         dequeue( 0 );
     } else {
+    	int tempprio = p->prio;
     	p->prio = -1; // hopefully this works
         // Shift the node to the root
-        p->scheduler_index = moveUp( p->scheduler_index, 1 );
+        p->scheduler_index = moveUp( p->scheduler_index, 1, tempprio );
 
         dequeue( 1 );
     }
@@ -311,9 +312,9 @@ void changePriority( TCB * p ) {
 
         // Extract the node
         if ( p->prio == PRIO_RT ) {
-            p->scheduler_index = moveUp( p->scheduler_index, 0 );
+            p->scheduler_index = moveUp( p->scheduler_index, 0, p->prio );
         } else {
-            p->scheduler_index = moveUp( p->scheduler_index, 1 );
+            p->scheduler_index = moveUp( p->scheduler_index, 1, p->prio );
         }
     } else {
         if ( p->prio == PRIO_RT ) {
@@ -382,7 +383,7 @@ TCB dequeue( int mode ) {
 // mode 1 for Non RT
 // mode 2 for remove() from RT heap
 // mode 3 for suspend
-int moveUp(int i, int mode) {
+int moveUp(int i, int mode, int tempprio) {
 
     if ( mode == 0 ){
         while (i != 0 && (*rt_heap[(i - 1) / 2]).next_job_deadline > (*rt_heap[i]).next_job_deadline) {
@@ -396,6 +397,7 @@ int moveUp(int i, int mode) {
             swap( heap[(i - 1) / 2], heap[i], 1);
             i = (i - 1) / 2;
         }
+        heap[0]->prio = tempprio; //needed for an edge case; suspending non-rt task
     } else if (mode == 2) {
     	while (i != 0 && (*rt_heap[(i - 1) / 2]).prio > (*rt_heap[i]).prio) {
 			//printf("SWAPPED! \r\n");
@@ -453,7 +455,7 @@ void enqueue( TCB * p ) {
 		total_suspended_tasks += 1;
 
 		// move up until the heap property satisfies
-		p->scheduler_index = moveUp(i, 3);
+		p->scheduler_index = moveUp(i, 3, p->prio);
 
     } else if ( p->prio == PRIO_RT ) {
 
@@ -468,7 +470,7 @@ void enqueue( TCB * p ) {
         compute_next_job_deadline( p );
 
         // move up until the heap property satisfies
-        p->scheduler_index = moveUp(i, 0);
+        p->scheduler_index = moveUp(i, 0, p->prio);
         for(int i = 0; i<rt_q_size; i++){
             //printf("rt queue element: 0x%x priority: %d scheduler index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index );
 
@@ -485,7 +487,7 @@ void enqueue( TCB * p ) {
         //printf("size: %d \r\n", q_size);
 
         // move up until the heap property satisfies
-        p->scheduler_index =moveUp(i, 1);
+        p->scheduler_index =moveUp(i, 1, p->prio);
         for(int i = 0; i<q_size; i++){
             //printf("queue element: 0x%x priority: %d scheduler index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index );
 
@@ -700,6 +702,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         printf("tid of current tcb is: %d \r\n", newTCB->tid);
         printf("address of current pTcb is: 0x%x \r\n ", newTCB);
         printf("address of previous pTcb is: 0x%x \r\n ", oldTCB);
+        U8 asfd = 0;
         p_taskinfo++;
         oldTCB = newTCB; // end of loop current TCB becomes old TCB
 
@@ -950,6 +953,40 @@ int k_tsk_run_new(void)
  *****************************************************************************/
 int k_tsk_yield(void)
 {
+	//check if we need to unsuspend an RT task
+	unsigned int a9_timer_curr = timer_get_current_val(2);	//get the current value of the free running timer
+	unsigned int time_elapsed = ( (a9_timer_last - a9_timer_curr) / 100 ) * 100; // floor to the nearest 100
+	a9_timer_last = a9_timer_curr;
+	global_clk += time_elapsed;
+
+	//wake up suspended tasks if needed
+	BOOL checkFurther = TRUE;
+	// remove and unsuspend tasks
+	while (checkFurther == TRUE) {
+		TCB* temp = get_highest_priority(3);
+		if (total_suspended_tasks == 0) {
+			checkFurther = FALSE;
+		} else if (global_clk < temp->unsuspend_time) {
+			checkFurther = FALSE;
+		} else { //global clock is greater or equal to unsuspend time
+			//char strbuff[50];
+			//sprintf(strbuff, "SUSPEND LIST TASK ADDRESS: 0x%x\t value of i: %d\r\n", (void*)(suspended_tasks[i]->task), i);
+			//SER_PutStr(0, strbuff);
+			// unsuspend
+			thread_changed_event = TEXITED;
+			thread_changed_p = temp;
+			// remove from list
+			scheduler(); //remove the smallest unsuspend_time TCB.
+			//temp is still the value that was removed
+			temp->unsuspend_time = 0;
+			temp->state = READY;
+			thread_changed_event = TCREATED;
+			thread_changed_p = temp;
+			scheduler(); //don't care about return, just add temp back to the rt queue
+		}
+	}
+	thread_changed_event = -1;
+	thread_changed_p = NULL;
     return k_tsk_run_new();
 }
 

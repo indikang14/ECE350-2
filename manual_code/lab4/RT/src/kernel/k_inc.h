@@ -124,6 +124,7 @@ extern TCB * thread_changed_p; // if a thread has created, exits, and prio chang
 extern int thread_changed_event; // if a thread has created, exits, and prio changes
 extern int old_priority; // if a thread switched priority I need the previous state
 extern unsigned int global_clk;
+extern unsigned int a9_timer_last;
 
 // TCBs are statically allocated inside the OS image
 extern TCB g_tcbs[MAX_TASKS];

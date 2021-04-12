@@ -85,7 +85,7 @@ void utask2(void)
 	long int x = 0;
 	int i = 0;
 	int j = 0;
-
+/*
 	task_t tid;
 	TASK_RT trt;
 	TIMEVAL newpn;
@@ -96,7 +96,7 @@ void utask2(void)
 	trt.task_entry = &utask3;
 	trt.u_stack_size = 0x200;
 	tsk_create_rt(&tid,  &trt);
-
+*/
 	while (1)
 	{
 		SER_PutStr(0, "utask2: ");
@@ -112,18 +112,21 @@ void utask2(void)
 		SER_PutChar(0, tf);
 
 		char strbuff[50];
-		sprintf(strbuff, "this is the hps val: %d\n\r", (U32)timer_get_current_val(0));
+		sprintf(strbuff, "this is the global clock: %d\n\r", global_clk);
 
 		SER_PutStr(0, strbuff);
 
 		++i;
-		for (x = 0; x < 5000000; x++)
-			; // some artifical delay
+		TIMEVAL temptv;
+		temptv.sec = 1;
+		temptv.usec = 0;
+		tsk_suspend(&temptv);
+
 	}
 	/* terminating */
 	// tsk_exit();
 }
-
+/*
 void utask3(void)
 {
 	//SER_PutStr(0, "utask1: entering \n\r");
@@ -132,7 +135,7 @@ void utask3(void)
 	SER_PutStr(0, strbuff);
 	tsk_done_rt();
 }
-
+*/
 /*
  *===========================================================================
  *                             END OF FILE
