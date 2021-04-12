@@ -92,7 +92,8 @@ typedef struct tcb {
     U8          priv;   /**> = 0 unprivileged, =1 privileged            */
     U8          scheduler_index; /** the index of the scheduler, -1 if not scheduled **/
     RTX_TASK_INFO *TcbInfo;
-    U64          next_job_deadline; /** only for RT tasks **/
+    U32         next_job_deadline; /** only for RT tasks **/
+    U32			unsuspend_time;
     CQ mbx_cq;
 } TCB;
 

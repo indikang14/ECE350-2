@@ -144,11 +144,11 @@ int initialized = 0;
 TCB * heap[MAX_TASKS];
 int q_size = 0;
 //int initialized = 0;
-SUSPEND_INFO * suspended_tasks[MAX_TASKS];
+//SUSPEND_INFO * suspended_tasks[MAX_TASKS];
+TCB * suspend_heap[MAX_TASKS];
 int total_suspended_tasks = 0;
 
 //priority_queue * global_q = NULL;
-
 
 TCB * rt_heap[MAX_TASKS];
 int rt_q_size = 0;
@@ -161,12 +161,12 @@ TCB dequeue( int mode );
 void moveToEnd( TCB * p );
 int moveUp(int i, int mode);
 void enqueue( TCB * p );
-TCB * get_highest_priority( void );
+//TCB * get_highest_priority( int mode );
 void heapify( int i, int mode );
 
 TCB * thread_changed_p = NULL; // if a thread has created, exits, and prio changes
 int  thread_changed_event = -1; // if a thread has created, exits, and prio changes
-int old_priority = NULL; // if a thread switched priority I need the previous stateTCB * thread_changed_p = NULL
+int old_priority = -1; // if a thread switched priority I need the previous stateTCB * thread_changed_p = NULL
 unsigned int global_clk = 0;
 
  //thread_changed_p = NULL; // if a thread has created, exits, and prio changes
@@ -176,6 +176,7 @@ unsigned int global_clk = 0;
 // note: scheduler is called when task is 
 TCB *scheduler(void)
 {
+	int temp_mode = 0;
     if ( initialized == 0 ) {  // initialize the queues
 
         // build the priority_queue datastructure
@@ -195,8 +196,9 @@ TCB *scheduler(void)
         initialized = 1;
 
     } else { // check if a state has changed, this could be called from created, exits, prio changes
-    	//printf("thread_changed_event: %d \r\n", thread_changed_event);
+
         if ( thread_changed_event != -1 ) {
+        	temp_mode = (thread_changed_p->unsuspend_time != 0 && thread_changed_p->prio == PRIO_RT ? 3 : 0);
 
             if ( thread_changed_event == TCREATED ) {
             	printf("CREATING\r\n");
@@ -224,19 +226,20 @@ TCB *scheduler(void)
     	printf("element in RT queue: 0x%x and priority: %d \r\n",rt_heap[i], rt_heap[i]->prio);
     }
     printf("\r\n");
-    return get_highest_priority();
+    return get_highest_priority(temp_mode);
 }
 
 // resets the global variables
 void clearEvent() {
-    thread_changed_event = NULL;
+    thread_changed_event = -1;
     thread_changed_p = NULL;
-    old_priority = NULL;
+    old_priority = -1;
 }
 
 // swap two TCBS on the global queue
 // mode 0 for RT heap
 // mode 1 for Non RT heap
+// mode 3 for suspended
 void swap(TCB * p1, TCB * p2, int mode ) {
 
     if ( mode == 0 ) {
@@ -249,7 +252,7 @@ void swap(TCB * p1, TCB * p2, int mode ) {
         int tmp = p1->scheduler_index;
         p1->scheduler_index = p2->scheduler_index;
         p2->scheduler_index = tmp;
-    } else {
+    } else if (mode == 1) {
         heap[p1->scheduler_index] = p2;
         heap[p2->scheduler_index] = p1;
         /*
@@ -260,20 +263,25 @@ void swap(TCB * p1, TCB * p2, int mode ) {
         int tmp = p1->scheduler_index;
         p1->scheduler_index = p2->scheduler_index;
         p2->scheduler_index = tmp;
+    } else if (mode == 3) {
+    	suspend_heap[p1->scheduler_index] = p2;
+    	suspend_heap[p2->scheduler_index] = p1;
+		int tmp = p1->scheduler_index;
+		p1->scheduler_index = p2->scheduler_index;
+		p2->scheduler_index = tmp;
     }
 }
 
 // removes a specific thread from the priority queue
 // RT
 void remove( TCB * p ) {
-
-
-
     //printf("remove index: %d \r\n", p->scheduler_index);
-
-
     // Extract the node
-    if ( p->prio == PRIO_RT ) {
+	if (p->prio == PRIO_RT && p->unsuspend_time != 0) {
+		p->unsuspend_time = 0;
+		p->scheduler_index = moveUp( p->scheduler_index, 3 );
+		dequeue(3);
+	} else if ( p->prio == PRIO_RT ) {
     	p->prio = -1; // hopefully this works
         // Shift the node to the root
         p->scheduler_index = moveUp( p->scheduler_index, 2 );
@@ -312,6 +320,7 @@ void changePriority( TCB * p ) {
 // deletes the max item and return
 // mode 0 for RT heap
 // mode 1 for Non RT heap
+// mode 3 for suspend
 TCB dequeue( int mode ) {
 
     TCB max;
@@ -331,7 +340,7 @@ TCB dequeue( int mode ) {
         // first item
         heapify( 0, 0 );
 
-    } else { // Non RT mode
+    } else if (mode == 1) { // Non RT mode
 
         max = *heap[0];
 
@@ -345,10 +354,19 @@ TCB dequeue( int mode ) {
         // maintain the heap property by heapifying the
         // first item
         heapify( 0, 1 );
+    } else if (mode == 3) {
+    	max = *suspend_heap[0];
+		// replace the first item with the last item
+		swap( suspend_heap[0], suspend_heap[ total_suspended_tasks - 1], 3 );
+		total_suspended_tasks--;
+		for(int i =0; i<total_suspended_tasks; i++){
+			//printf("element in queue: 0x%x and priority: %d and sched index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index);
+		}
+
+		// maintain the heap property by heapifying the
+		// first item
+		heapify( 0, 3 );
     }
-
-    
-
     return max;
 }
 
@@ -356,6 +374,7 @@ TCB dequeue( int mode ) {
 // mode 0 for RT heap
 // mode 1 for Non RT
 // mode 2 for remove() from RT heap
+// mode 3 for suspend
 int moveUp(int i, int mode) {
 
     if ( mode == 0 ){
@@ -377,6 +396,12 @@ int moveUp(int i, int mode) {
 			i = (i - 1) / 2;
 		}
     	rt_heap[0]->prio = 0; //set the prio back to zero after dequeueing a rt task
+    } else if (mode == 3) {
+    	while (i != 0 && (*suspend_heap[(i - 1) / 2]).unsuspend_time > (*suspend_heap[i]).unsuspend_time) {
+			//printf("SWAPPED! \r\n");
+			swap( suspend_heap[(i - 1) / 2], suspend_heap[i], 3);
+			i = (i - 1) / 2;
+		}
     }
     
 
@@ -413,7 +438,17 @@ void enqueue( TCB * p ) {
         return;
     }
 
-    if ( p->prio == PRIO_RT ) {
+    if (p->prio == PRIO_RT && p->unsuspend_time != 0) {
+    	// first insert at end and increment size
+		i = total_suspended_tasks;
+		suspend_heap[total_suspended_tasks] = p;
+		p->scheduler_index = total_suspended_tasks;
+		total_suspended_tasks += 1;
+
+		// move up until the heap property satisfies
+		p->scheduler_index = moveUp(i, 3);
+
+    } else if ( p->prio == PRIO_RT ) {
 
         // first insert at end and increment size
         i = rt_q_size;
@@ -455,14 +490,18 @@ void enqueue( TCB * p ) {
 
 // returns the minimum item of either RT or Non-RT heap
 // if RT then move to back of the line, as we've executed a job
-TCB * get_highest_priority() {
-    if ( rt_q_size == 0 ) {
-        return heap[ 0 ];
+TCB * get_highest_priority(int mode) {
+    if (mode == 3) {
+    	return suspend_heap[0];
     } else {
-        TCB * p = rt_heap[ 0 ];
-        moveToEnd( p );
-        compute_next_job_deadline( p );
-        return p;
+		if ( rt_q_size == 0 ) {
+			return heap[ 0 ];
+		} else {
+			TCB * p = rt_heap[ 0 ];
+			moveToEnd( p );
+			compute_next_job_deadline( p );
+			return p;
+		}
     }
 }
 
@@ -480,6 +519,7 @@ void moveToEnd( TCB * p ) {
 // we are going to maintain a heap for the tcbs
 // 0 for RT tasks
 // 1 for Non RT tasks
+// 3 for suspend
 void heapify( int i, int mode )
 {
     int smallest = i;
@@ -504,7 +544,7 @@ void heapify( int i, int mode )
             heapify( smallest, 0  );
         }
 
-    } else {
+    } else if (mode == 1) {
 
         int n = q_size;
 
@@ -521,6 +561,21 @@ void heapify( int i, int mode )
             swap(heap[i], heap[smallest], 1);
             heapify( smallest, 1 );
         }
+    } else if (mode == 3) {
+    	int n = total_suspended_tasks;
+		// If left child is larger than root
+		if (l < n && suspend_heap[l]->unsuspend_time < suspend_heap[smallest]->unsuspend_time)
+			smallest = l;
+
+		// If right child is larger than largest so far
+		if (r < n && suspend_heap[r]->unsuspend_time < suspend_heap[smallest]->unsuspend_time)
+			smallest = r;
+
+		// If largest is not root
+		if (smallest != i) {
+			swap(suspend_heap[i], suspend_heap[smallest], 3);
+			heapify( smallest, 3 );
+		}
     }
 }
 
@@ -606,6 +661,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         if(newTCB->prio == PRIO_RT) {
 			newTCB->next_job_deadline = 0;
 			newTCB->TcbInfo->rt_jobNumber = 0;
+			newTCB->unsuspend_time = 0;
 
 			if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
 				size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
@@ -993,6 +1049,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 	newTaskBlock->TcbInfo->ptask = task_entry;
 	newTaskBlock->TcbInfo->rt_jobNumber = 0;
+	newTaskBlock->unsuspend_time = 0;
 
 	//initializing mailbox
 	CQ mbx_cq;
@@ -1296,6 +1353,7 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 		newTaskBlock->TcbInfo->p_n.usec = task->p_n.usec;
 		newTaskBlock->next_job_deadline = 0;
 		newTaskBlock->TcbInfo->rt_jobNumber = 0;
+		newTaskBlock->unsuspend_time = 0;
 
 
 		//initializing mailbox
@@ -1365,20 +1423,21 @@ void k_tsk_done_rt(void) {
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
     if (deadlineMet == TRUE) {
-    	SUSPEND_INFO* new_sus;
-		new_sus->task = gp_current_task;
-		new_sus->total_usecs = gp_current_task->next_job_deadline - global_clk;
-		suspended_tasks[total_suspended_tasks] = new_sus;
-		total_suspended_tasks++;
-
     	//assumption: the scheduler will always return a different task.
-    	gp_current_task->TcbInfo->rt_jobNumber++;
-    	gp_current_task->state = SUSPENDED;
-    	TCB *p_tcb_old = gp_current_task;
-    	thread_changed_event = TEXITED;
-    	thread_changed_p = p_tcb_old;
+		TCB *p_tcb_old = gp_current_task;
+		thread_changed_event = TEXITED;
+		thread_changed_p = p_tcb_old;
 		gp_current_task = scheduler();
 		gp_current_task->state = RUNNING;   // change state of the to-be-switched-in  tcb
+
+    	//suspend the old task
+		p_tcb_old->state = SUSPENDED;
+		p_tcb_old->unsuspend_time = p_tcb_old->next_job_deadline - global_clk;
+		p_tcb_old->TcbInfo->rt_jobNumber++;
+		thread_changed_event = TCREATED;
+		thread_changed_p = p_tcb_old;
+		scheduler();
+
 		k_tsk_switch(p_tcb_old);            // switch stacks
     }
     //3b. if deadline missed, send error message to UART port (putty), set state to ready, then switch tasks
@@ -1406,24 +1465,20 @@ void k_tsk_suspend(TIMEVAL *tv)
     	return;
     }
 
-    SUSPEND_INFO* new_sus;
-    new_sus->task = gp_current_task;
-    new_sus->total_usecs = tv->sec * 1000000 + tv->usec;
-    suspended_tasks[total_suspended_tasks] = new_sus;
-
-    total_suspended_tasks++;
-
-    TCB* p_tcb_old;
-
-    p_tcb_old = gp_current_task;
-    p_tcb_old->state = SUSPENDED;
-
+    //get new task to run
+    TCB* p_tcb_old = gp_current_task;
     thread_changed_event = TEXITED;
+	thread_changed_p = p_tcb_old;
+	gp_current_task = scheduler();
+	gp_current_task->state = RUNNING;
+
+
+    p_tcb_old->state = SUSPENDED;
+    p_tcb_old->unsuspend_time = global_clk + tv->sec * 1000000 + tv->usec;
+    thread_changed_event = TCREATED;
     thread_changed_p = p_tcb_old;
+    scheduler();
 
-    gp_current_task = scheduler();
-
-    gp_current_task->state = RUNNING;
     k_tsk_switch(p_tcb_old);
 
     return;

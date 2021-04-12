@@ -94,4 +94,7 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task);
 void k_tsk_done_rt      (void);
 void k_tsk_suspend      (struct timeval_rt *tv);
 
+TCB * get_highest_priority(int mode);
+
+
 #endif // ! K_TASK_H_

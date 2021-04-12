@@ -262,30 +262,30 @@ void c_IRQ_Handler(void)
 		global_clk += time_elapsed;
 
 		//wake up suspended tasks if needed
-		int i = 0;
+		BOOL checkFurther = TRUE;
 		// remove and unsuspend tasks
-		int temp_suspend_decrement = 0;
-		while (i < total_suspended_tasks) {
-			if (time_elapsed >= suspended_tasks[i]->total_usecs) {
-				char strbuff[50];
-				sprintf(strbuff, "SUSPEND LIST TASK ADDRESS: 0x%x\t value of i: %d\r\n", (void*)(suspended_tasks[i]->task), i);
-				SER_PutStr(0, strbuff);
+		while (checkFurther == TRUE) {
+			TCB* temp = get_highest_priority(3);
+			if (global_clk < temp->unsuspend_time) {
+				checkFurther = FALSE;
+			} else { //global clock is greater or equal to unsuspend time
+				//char strbuff[50];
+				//sprintf(strbuff, "SUSPEND LIST TASK ADDRESS: 0x%x\t value of i: %d\r\n", (void*)(suspended_tasks[i]->task), i);
+				//SER_PutStr(0, strbuff);
 				// unsuspend
-				suspended_tasks[i]->task->state = READY;
-				thread_changed_event = TCREATED;
-				thread_changed_p = suspended_tasks[i]->task;
-				scheduler(); //don't care about return, just update rt queue
+				thread_changed_event = TEXITED;
+				thread_changed_p = temp;
 				// remove from list
-				suspended_tasks[i] = NULL;
-				temp_suspend_decrement++;
-				switch_flag = 1;
+				temp = scheduler();
+				temp->unsuspend_time = 0;
+				temp->state = READY;
+				thread_changed_event = TCREATED;
+				thread_changed_p = temp;
+				scheduler(); //don't care about return, just update rt queue
 
-			} else {
-				suspended_tasks[i]->total_usecs -= time_elapsed;
+				switch_flag = 1;
 			}
-			i++;
 		}
-		total_suspended_tasks -= temp_suspend_decrement;
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
