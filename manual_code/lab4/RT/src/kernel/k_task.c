@@ -284,7 +284,7 @@ void swap(TCB * p1, TCB * p2, int mode ) {
 void remove( TCB * p ) {
     //printf("remove index: %d \r\n", p->scheduler_index);
     // Extract the node
-	if (p->prio == PRIO_RT && p->unsuspend_time != 0) {
+	if (p->unsuspend_time != 0) {
 		p->unsuspend_time = 0;
 		p->scheduler_index = moveUp( p->scheduler_index, 3 );
 		dequeue(3);
@@ -445,7 +445,7 @@ void enqueue( TCB * p ) {
         return;
     }
 
-    if (p->prio == PRIO_RT && p->unsuspend_time != 0) {
+    if (p->unsuspend_time != 0) {
     	// first insert at end and increment size
 		i = total_suspended_tasks;
 		suspend_heap[total_suspended_tasks] = p;
@@ -627,6 +627,9 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
     p_tcb->tid      = TID_NULL;
     p_tcb->state    = RUNNING;
     p_tcb->next 	= NULL; //initialize head of TCBs
+    p_tcb->unsuspend_time = 0;
+
+
     TCBhead 		= &g_tcbs[0]; // head should point to NULL
     TCBhead->next 	= NULL;
     g_num_active_tasks++;
@@ -664,11 +667,14 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         mbx_cq.remainingSize = 0;
         mbx_cq.memblock_p = NULL;
         newTCB->mbx_cq = mbx_cq;
+
+        newTCB->unsuspend_time = 0;
+
+
         //if task is real time then create mailbox with byte size in rtx task info
         if(newTCB->prio == PRIO_RT) {
 			newTCB->next_job_deadline = 0;
 			newTCB->TcbInfo->rt_jobNumber = 0;
-			newTCB->unsuspend_time = 0;
 
 			if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
 				size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
@@ -694,7 +700,6 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         printf("tid of current tcb is: %d \r\n", newTCB->tid);
         printf("address of current pTcb is: 0x%x \r\n ", newTCB);
         printf("address of previous pTcb is: 0x%x \r\n ", oldTCB);
-        int asfd = 0;
         p_taskinfo++;
         oldTCB = newTCB; // end of loop current TCB becomes old TCB
 
