@@ -232,6 +232,7 @@ void c_IRQ_Handler(void)
 	static unsigned int a9_timer_last = 0xFFFFFFFF; // the initial value of free-running timer
 	unsigned int a9_timer_curr;
 
+
 	char switch_flag = 0;
 	// Read the ICCIAR from the CPU Interface in the GIC
 	U32 interrupt_ID = GIC_AckPending();
@@ -263,21 +264,28 @@ void c_IRQ_Handler(void)
 		//wake up suspended tasks if needed
 		int i = 0;
 		// remove and unsuspend tasks
+		int temp_suspend_decrement = 0;
 		while (i < total_suspended_tasks) {
 			if (time_elapsed >= suspended_tasks[i]->total_usecs) {
+				char strbuff[50];
+				sprintf(strbuff, "SUSPEND LIST TASK ADDRESS: 0x%x\t value of i: %d\r\n", (void*)(suspended_tasks[i]->task), i);
+				SER_PutStr(0, strbuff);
 				// unsuspend
 				suspended_tasks[i]->task->state = READY;
 				thread_changed_event = TCREATED;
 				thread_changed_p = suspended_tasks[i]->task;
+				scheduler(); //don't care about return, just update rt queue
 				// remove from list
-				suspended_tasks[i] = suspended_tasks[total_suspended_tasks - 1];
-				total_suspended_tasks--;
+				suspended_tasks[i] = NULL;
+				temp_suspend_decrement++;
 				switch_flag = 1;
+
 			} else {
-				i++;
 				suspended_tasks[i]->total_usecs -= time_elapsed;
 			}
+			i++;
 		}
+		total_suspended_tasks -= temp_suspend_decrement;
 	}
 	else if(interrupt_ID == HPS_TIMER1_IRQ_ID)
 	{
@@ -322,6 +330,8 @@ void c_IRQ_Handler(void)
 	// Write to the End of Interrupt Register (ICCEOIR)
 	GIC_EndInterrupt(interrupt_ID);
 	// Make sure to call line 246 before context switching
+	thread_changed_event = -1;
+	thread_changed_p = NULL;
 	if (switch_flag == 1)
 	{
 		k_tsk_run_new();

@@ -195,14 +195,17 @@ TCB *scheduler(void)
         initialized = 1;
 
     } else { // check if a state has changed, this could be called from created, exits, prio changes
-
-        if ( thread_changed_event != NULL ) {
+    	//printf("thread_changed_event: %d \r\n", thread_changed_event);
+        if ( thread_changed_event != -1 ) {
 
             if ( thread_changed_event == TCREATED ) {
+            	printf("CREATING\r\n");
                 enqueue( thread_changed_p );
             } else if ( thread_changed_event == TEXITED ) {
+            	printf("REMOVING\r\n");
                 remove( thread_changed_p );
             } else if ( thread_changed_event == TPRIORITY ) {
+            	printf("CHANGING PRIO\r\n");
                 changePriority( thread_changed_p );
             }
 
@@ -216,11 +219,11 @@ TCB *scheduler(void)
     }
 
     printf("size: %d \r\n", rt_q_size );
-    printf("checking queue ======================================= \r\n");
+    printf("checking RT queue ======================================= \r\n");
     for(int i =0; i < rt_q_size; i++){
-    	printf("element in queue: 0x%x and priority: %d \r\n",rt_heap[i], rt_heap[i]->prio);
+    	printf("element in RT queue: 0x%x and priority: %d \r\n",rt_heap[i], rt_heap[i]->prio);
     }
-
+    printf("\r\n");
     return get_highest_priority();
 }
 
@@ -239,20 +242,21 @@ void swap(TCB * p1, TCB * p2, int mode ) {
     if ( mode == 0 ) {
         rt_heap[p1->scheduler_index] = p2;
         rt_heap[p2->scheduler_index] = p1;
-        printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
+/*        printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
         printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
         printf("new p1: 0x%x new p2: 0x%x \r\n", rt_heap[p1->scheduler_index] , rt_heap[p2->scheduler_index]  );
-
+*/
         int tmp = p1->scheduler_index;
         p1->scheduler_index = p2->scheduler_index;
         p2->scheduler_index = tmp;
     } else {
         heap[p1->scheduler_index] = p2;
         heap[p2->scheduler_index] = p1;
+        /*
         printf("indexes: %d, %d \r\n",p1->scheduler_index,p2->scheduler_index  );
         printf("p1: 0x%x p2: 0x%x \r\n", p1 , p2 );
         printf("new p1: 0x%x new p2: 0x%x \r\n", heap[p1->scheduler_index] , heap[p2->scheduler_index]  );
-
+*/
         int tmp = p1->scheduler_index;
         p1->scheduler_index = p2->scheduler_index;
         p2->scheduler_index = tmp;
@@ -263,20 +267,20 @@ void swap(TCB * p1, TCB * p2, int mode ) {
 // RT
 void remove( TCB * p ) {
 
-    p->prio = -1; // hopefully this works
 
-    printf("remove index: %d \r\n", p->scheduler_index);
+
+    //printf("remove index: %d \r\n", p->scheduler_index);
 
 
     // Extract the node
     if ( p->prio == PRIO_RT ) {
-
+    	p->prio = -1; // hopefully this works
         // Shift the node to the root
-        p->scheduler_index = moveUp( p->scheduler_index, 0 );
+        p->scheduler_index = moveUp( p->scheduler_index, 2 );
 
         dequeue( 0 );
     } else {
-
+    	p->prio = -1; // hopefully this works
         // Shift the node to the root
         p->scheduler_index = moveUp( p->scheduler_index, 1 );
 
@@ -320,7 +324,7 @@ TCB dequeue( int mode ) {
         swap( rt_heap[0], rt_heap[ rt_q_size - 1], 0 );
         rt_q_size--;
         for(int i = 0; i<rt_q_size; i++){
-        	printf("rt element in queue: 0x%x and priority: %d and sched index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index);
+        	//printf("rt element in queue: 0x%x and priority: %d and sched index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index);
         }
 
         // maintain the heap property by heapifying the
@@ -335,7 +339,7 @@ TCB dequeue( int mode ) {
         swap( heap[0], heap[ q_size - 1], 1 );
         q_size--;
         for(int i =0; i<q_size; i++){
-        	printf("element in queue: 0x%x and priority: %d and sched index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index);
+        	//printf("element in queue: 0x%x and priority: %d and sched index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index);
         }
 
         // maintain the heap property by heapifying the
@@ -351,20 +355,28 @@ TCB dequeue( int mode ) {
 // moves the element up to the top
 // mode 0 for RT heap
 // mode 1 for Non RT
+// mode 2 for remove() from RT heap
 int moveUp(int i, int mode) {
 
     if ( mode == 0 ){
         while (i != 0 && (*rt_heap[(i - 1) / 2]).next_job_deadline > (*rt_heap[i]).next_job_deadline) {
-            printf("SWAPPED! \r\n");
+            //printf("SWAPPED! \r\n");
             swap( rt_heap[(i - 1) / 2], rt_heap[i], 0);
             i = (i - 1) / 2;
         }
-    } else {
+    } else if (mode == 1 ) {
         while (i != 0 && (*heap[(i - 1) / 2]).prio > (*heap[i]).prio) {
-            printf("SWAPPED! \r\n");
+            //printf("SWAPPED! \r\n");
             swap( heap[(i - 1) / 2], heap[i], 1);
             i = (i - 1) / 2;
         }
+    } else if (mode == 2) {
+    	while (i != 0 && (*rt_heap[(i - 1) / 2]).prio > (*rt_heap[i]).prio) {
+			//printf("SWAPPED! \r\n");
+			swap( rt_heap[(i - 1) / 2], rt_heap[i], 0);
+			i = (i - 1) / 2;
+		}
+    	rt_heap[0]->prio = 0; //set the prio back to zero after dequeueing a rt task
     }
     
 
@@ -394,10 +406,10 @@ void compute_next_job_deadline( TCB * p ) {
 void enqueue( TCB * p ) {
 
     int i;
-	printf("address of p: 0x%x \r\n", p);
+	//printf("address of p: 0x%x \r\n", p);
 
     if ( q_size + rt_q_size >= MAX_TASKS ) {
-        printf("%s\n", "The heap is full. Cannot insert");
+        //printf("%s\n", "The heap is full. Cannot insert");
         return;
     }
 
@@ -407,16 +419,16 @@ void enqueue( TCB * p ) {
         i = rt_q_size;
         rt_heap[rt_q_size] = p;
         p->scheduler_index = rt_q_size;
-        printf("rt heap element: 0x%x \r\n",rt_heap[rt_q_size] );
+        //printf("rt heap element: 0x%x \r\n",rt_heap[rt_q_size] );
         rt_q_size += 1;
-        printf("rt size: %d \r\n", rt_q_size);
+        //printf("rt size: %d \r\n", rt_q_size);
 
         compute_next_job_deadline( p );
 
         // move up until the heap property satisfies
         p->scheduler_index = moveUp(i, 0);
         for(int i = 0; i<rt_q_size; i++){
-            printf("rt queue element: 0x%x priority: %d scheduler index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index );
+            //printf("rt queue element: 0x%x priority: %d scheduler index: %d \r\n",rt_heap[i], rt_heap[i]->prio, rt_heap[i]->scheduler_index );
 
         }
 
@@ -426,14 +438,14 @@ void enqueue( TCB * p ) {
         i = q_size;
         heap[q_size] = p;
         p->scheduler_index = q_size;
-        printf("heap element: 0x%x \r\n",heap[q_size] );
+        //printf("heap element: 0x%x \r\n",heap[q_size] );
         q_size += 1;
-        printf("size: %d \r\n", q_size);
+        //printf("size: %d \r\n", q_size);
 
         // move up until the heap property satisfies
         p->scheduler_index =moveUp(i, 1);
         for(int i = 0; i<q_size; i++){
-            printf("queue element: 0x%x priority: %d scheduler index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index );
+            //printf("queue element: 0x%x priority: %d scheduler index: %d \r\n",heap[i], heap[i]->prio, heap[i]->scheduler_index );
 
         }
     }
@@ -446,7 +458,7 @@ void enqueue( TCB * p ) {
 TCB * get_highest_priority() {
     if ( rt_q_size == 0 ) {
         return heap[ 0 ];
-    } {
+    } else {
         TCB * p = rt_heap[ 0 ];
         moveToEnd( p );
         compute_next_job_deadline( p );
@@ -592,22 +604,23 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         newTCB->mbx_cq = mbx_cq;
         //if task is real time then create mailbox with byte size in rtx task info
         if(newTCB->prio == PRIO_RT) {
-        	newTCB->next_job_deadline = 0;
-        	 if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
-        		 size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
+			newTCB->next_job_deadline = 0;
+			newTCB->TcbInfo->rt_jobNumber = 0;
 
-        		     //allocate memory for mailbox
-        		     kernelOwnedMemory = 1;
-        		     U8 *p_mbx = k_mem_alloc(newsize);
-        		     kernelOwnedMemory = 0;
-        		     //check that allocation was successful
-        		     if (p_mbx == NULL) return -1;
-        		     newTCB->mbx_cq.memblock_p = p_mbx;
-        		     newTCB->mbx_cq.size = newsize;
-        		     newTCB->mbx_cq.remainingSize = newsize;
-					}
+			if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
+				size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
+				//allocate memory for mailbox
+				kernelOwnedMemory = 1;
+				U8 *p_mbx = k_mem_alloc(newsize);
+				kernelOwnedMemory = 0;
+				//check that allocation was successful
+				if (p_mbx == NULL) return -1;
+				newTCB->mbx_cq.memblock_p = p_mbx;
+				newTCB->mbx_cq.size = newsize;
+				newTCB->mbx_cq.remainingSize = newsize;
+			}
 
-        	    }
+		}
 
 
 
@@ -979,6 +992,8 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->u_stack_size = stack_size;
 	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 	newTaskBlock->TcbInfo->ptask = task_entry;
+	newTaskBlock->TcbInfo->rt_jobNumber = 0;
+
 	//initializing mailbox
 	CQ mbx_cq;
 	mbx_cq.head = NULL;
@@ -1349,7 +1364,7 @@ void k_tsk_done_rt(void) {
     BOOL deadlineMet = gp_current_task->next_job_deadline > global_clk ? TRUE : FALSE;
 
     //3a. if deadline met, set task to SUSPENDED, then switch tasks
-    if (deadlineMet == 	 TRUE) {
+    if (deadlineMet == TRUE) {
     	SUSPEND_INFO* new_sus;
 		new_sus->task = gp_current_task;
 		new_sus->total_usecs = gp_current_task->next_job_deadline - global_clk;
@@ -1369,7 +1384,7 @@ void k_tsk_done_rt(void) {
     //3b. if deadline missed, send error message to UART port (putty), set state to ready, then switch tasks
     else {
     	char strbuff[50];
-    	sprintf(strbuff, "Job %u of task %u missed its deadline", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
+    	sprintf(strbuff, "Job %u of task %u missed its deadline\r\n", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
     	SER_PutStr(1, strbuff);
     	gp_current_task->TcbInfo->rt_jobNumber++;
     	k_tsk_run_new(); //set this task to ready and get a new task to run
