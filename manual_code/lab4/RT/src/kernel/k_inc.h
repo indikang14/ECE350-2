@@ -94,6 +94,7 @@ typedef struct tcb {
     RTX_TASK_INFO *TcbInfo;
     U32         next_job_deadline; /** only for RT tasks **/
     U32			unsuspend_time;
+    U32 				rt_jobNumber;
     CQ mbx_cq;
 } TCB;
 

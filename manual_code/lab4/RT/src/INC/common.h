@@ -193,7 +193,6 @@ typedef struct rtx_task_info {
     U8                  state;              /**> task state                         */
     U8                  priv;               /**> = 0 unprivileged, =1 privileged    */
     /* The following only applies to real-time tasks */
-    U32 				rt_jobNumber;
     TIMEVAL             p_n;                /**> period in seconds and microseconds */
     size_t              rt_mbx_size;        /**> real-time task mailbox capacity    */
 } RTX_TASK_INFO;

@@ -676,7 +676,7 @@ int k_tsk_init(RTX_TASK_INFO *task_info, int num_tasks)
         //if task is real time then create mailbox with byte size in rtx task info
         if(newTCB->prio == PRIO_RT) {
 			newTCB->next_job_deadline = 0;
-			newTCB->TcbInfo->rt_jobNumber = 0;
+			newTCB->rt_jobNumber = 0;
 
 			if( newTCB->TcbInfo->rt_mbx_size > 0 && newTCB->TcbInfo->rt_mbx_size > MIN_MBX_SIZE ) {
 				size_t newsize = newTCB->TcbInfo->rt_mbx_size % 4 == 0 ? newTCB->TcbInfo->rt_mbx_size : (newTCB->TcbInfo->rt_mbx_size / 4 + 1) * 4;
@@ -1098,7 +1098,7 @@ int k_tsk_create(task_t *task, void (*task_entry)(void), U8 prio, U16 stack_size
 	newTaskBlock->TcbInfo->u_stack_size = stack_size;
 	newTaskBlock->TcbInfo->k_stack_size = KERN_STACK_SIZE;
 	newTaskBlock->TcbInfo->ptask = task_entry;
-	newTaskBlock->TcbInfo->rt_jobNumber = 0;
+	newTaskBlock->rt_jobNumber = 0;
 	newTaskBlock->unsuspend_time = 0;
 
 	//initializing mailbox
@@ -1402,7 +1402,7 @@ int k_tsk_create_rt(task_t *tid, TASK_RT *task)
 		newTaskBlock->TcbInfo->p_n.sec = task->p_n.sec;
 		newTaskBlock->TcbInfo->p_n.usec = task->p_n.usec;
 		newTaskBlock->next_job_deadline = 0;
-		newTaskBlock->TcbInfo->rt_jobNumber = 0;
+		newTaskBlock->rt_jobNumber = 0;
 		newTaskBlock->unsuspend_time = 0;
 
 
@@ -1483,7 +1483,7 @@ void k_tsk_done_rt(void) {
     	//suspend the old task
 		p_tcb_old->state = SUSPENDED;
 		p_tcb_old->unsuspend_time = p_tcb_old->next_job_deadline - global_clk;
-		p_tcb_old->TcbInfo->rt_jobNumber++;
+		p_tcb_old->rt_jobNumber++;
 		thread_changed_event = TCREATED;
 		thread_changed_p = p_tcb_old;
 		scheduler();
@@ -1493,10 +1493,10 @@ void k_tsk_done_rt(void) {
     //3b. if deadline missed, send error message to UART port (putty), set state to ready, then switch tasks
     else {
     	char strbuff[50];
-    	sprintf(strbuff, "Job %u of task %u missed its deadline\r\n", gp_current_task->TcbInfo->rt_jobNumber, (U32) gp_current_task->tid);
+    	sprintf(strbuff, "Job %u of task %u missed its deadline\r\n", gp_current_task->rt_jobNumber, (U32) gp_current_task->tid);
     	SER_PutStr(1, strbuff);
     	SER_PutStr(0, strbuff);
-    	gp_current_task->TcbInfo->rt_jobNumber++;
+    	gp_current_task->rt_jobNumber++;
     	k_tsk_run_new(); //set this task to ready and get a new task to run
     }
     return;
